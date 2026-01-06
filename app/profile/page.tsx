@@ -4,14 +4,18 @@ import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import { 
   User, Briefcase, MapPin, Calendar, Wallet, 
-  LogOut, Edit2, Loader2, X 
+  LogOut, Edit2, Loader2, X, Camera, Plus, 
+  Flag, Heart, Bookmark, MessageSquare, ArrowRight
 } from "lucide-react";
-import { auth, db } from "../../lib/firebase"; // Ensure path
+import { auth, db } from "@/lib/firebase"; 
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import Link from "next/link";
+import React from "react";
 
-// Type Definition
+// --- Type Definition (Matches Flutter Model) ---
 type UserProfile = {
+  uid?: string;
   displayName: string;
   email: string;
   profileImageUrl: string;
@@ -19,15 +23,34 @@ type UserProfile = {
   gender: string;
   nationality: string;
   occupation: string;
-  location: string; // Work Location
+  location: string;
   selfIntroduction: string;
   moveinDate?: any;
   budget: number;
   roomType: string;
+  propertyType: string;
   pax: number;
   pets: string;
   hobbies: string[];
   preferredAreas: string[];
+  _geoloc?: Array<{ lat: number; lng: number }>;
+};
+
+// --- Geocoding Helper ---
+const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ""; 
+
+const getLatLng = async (address: string): Promise<{ lat: number; lng: number } | null> => {
+  if (!address || !GOOGLE_MAPS_API_KEY) return null;
+  try {
+    const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_MAPS_API_KEY}`);
+    const data = await res.json();
+    if (data.status === 'OK' && data.results[0]) {
+      return data.results[0].geometry.location;
+    }
+  } catch (e) {
+    console.error("Geocoding error", e);
+  }
+  return null;
 };
 
 export default function ProfilePage() {
@@ -35,6 +58,9 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
+  
+  // Edit Form States
+  const [saving, setSaving] = useState(false);
 
   // Auth & Fetch Data
   useEffect(() => {
@@ -46,29 +72,29 @@ export default function ProfilePage() {
       setUser(currentUser);
 
       try {
-        const docRef = doc(db, "users", currentUser.uid); // Or "users_prof" depending on your schema
+        const docRef = doc(db, "users_prof", currentUser.uid);
         const snap = await getDoc(docRef);
         
         if (snap.exists()) {
           setProfile(snap.data() as UserProfile);
         } else {
-          // Default Profile
           setProfile({
             displayName: currentUser.displayName || "New User",
             email: currentUser.email || "",
             profileImageUrl: currentUser.photoURL || "",
-            age: 20,
-            gender: "Not Specified",
-            nationality: "",
-            occupation: "",
-            location: "",
+            age: 25,
+            gender: "Not specified",
+            nationality: "Not specified",
+            occupation: "Not specified",
+            location: "Not specified",
             selfIntroduction: "",
             budget: 1000,
-            roomType: "Single",
+            roomType: "Middle",
+            propertyType: "Condominium",
             pax: 1,
             pets: "No",
             hobbies: [],
-            preferredAreas: []
+            preferredAreas: [],
           });
         }
       } catch (err) {
@@ -80,44 +106,77 @@ export default function ProfilePage() {
     return () => unsub();
   }, []);
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || !profile) return;
-    
-    try {
-      await setDoc(doc(db, "users", user.uid), profile, { merge: true });
-      setIsEditing(false);
-    } catch (err) {
-      alert("Failed to save");
-    }
-  };
-
   const handleLogout = async () => {
     await signOut(auth);
     window.location.href = "/signin";
   };
 
-  if (loading) return <div className="flex h-screen items-center justify-center bg-zinc-50"><Loader2 className="animate-spin" /></div>;
+  // --- SAVE HANDLER ---
+  const handleSave = async (e: React.FormEvent, editedProfile: UserProfile, file?: File | null) => {
+    e.preventDefault();
+    if (!user) return;
+    setSaving(true);
+    
+    try {
+      let finalImageUrl = editedProfile.profileImageUrl;
+
+      if (file) {
+        // Storage not available - skip image upload
+        console.warn("Storage not configured - skipping image upload");
+      }
+
+      const geolocList: Array<{ lat: number; lng: number }> = [];
+      
+      if (editedProfile.location && editedProfile.location !== "Not specified") {
+        const loc = await getLatLng(editedProfile.location);
+        if (loc) geolocList.push(loc);
+      }
+
+      for (const area of editedProfile.preferredAreas) {
+         const loc = await getLatLng(area);
+         if (loc) geolocList.push(loc);
+      }
+
+      const finalData = {
+        ...editedProfile,
+        profileImageUrl: finalImageUrl,
+        _geoloc: geolocList,
+        email: user.email 
+      };
+
+      await setDoc(doc(db, "users_prof", user.uid), finalData, { merge: true });
+      
+      setProfile(finalData);
+      setIsEditing(false);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save profile. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) return <div className="flex h-screen items-center justify-center bg-zinc-50"><Loader2 className="animate-spin text-zinc-600" /></div>;
 
   return (
-    <div className="min-h-screen bg-zinc-50 font-sans pb-12">
+    <div className="min-h-screen bg-zinc-50 font-sans pb-24">
       <Navbar />
 
-      <main className="mx-auto max-w-3xl px-4 py-8">
+      <main className="mx-auto max-w-3xl px-4 py-8 space-y-6">
         
         {/* --- Header Card --- */}
-        <div className="mb-8 flex flex-col items-center rounded-2xl border border-zinc-200 bg-white p-8 text-center shadow-sm">
-          <div className="relative mb-4 h-24 w-24 overflow-hidden rounded-full border-4 border-zinc-50 bg-zinc-200">
+        <div className="flex flex-col items-center rounded-2xl border border-zinc-200 bg-white p-8 text-center shadow-sm">
+          <div className="relative mb-4 h-24 w-24 overflow-hidden rounded-full border-4 border-zinc-50 bg-zinc-200 shadow-inner">
              {profile?.profileImageUrl ? (
                 <img src={profile.profileImageUrl} alt="Profile" className="h-full w-full object-cover" />
              ) : (
-                <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-zinc-400">
-                    {profile?.displayName?.charAt(0)}
+                <div className="flex h-full w-full items-center justify-center text-3xl font-bold text-zinc-900">
+                    {profile?.displayName?.charAt(0).toUpperCase()}
                 </div>
              )}
           </div>
           <h1 className="text-2xl font-bold text-zinc-900">{profile?.displayName}</h1>
-          <p className="text-sm text-zinc-500 mb-6">{profile?.email}</p>
+          <p className="text-sm text-zinc-600 mb-6 font-medium">{profile?.email}</p>
           
           <button 
             onClick={() => setIsEditing(true)}
@@ -127,132 +186,398 @@ export default function ProfilePage() {
           </button>
         </div>
 
+        {/* --- Saved Listings Link --- */}
+        <Link href="/profile/saved-listings" className="block">
+          <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-5 shadow-sm transition-all hover:shadow-md hover:border-zinc-300">
+             <div className="flex items-center gap-4">
+                <div className="rounded-full bg-purple-50 p-3 text-purple-700">
+                    <Bookmark className="h-5 w-5" />
+                </div>
+                <span className="font-bold text-zinc-800">Saved Listings</span>
+             </div>
+             <ArrowRight className="h-4 w-4 text-zinc-400" />
+          </div>
+        </Link>
+
         {/* --- Info Sections --- */}
-        <div className="space-y-6">
             
-            {/* Personal Info */}
-            <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-                <h3 className="mb-6 text-xs font-bold uppercase tracking-wider text-zinc-400">Personal Info</h3>
-                <div className="space-y-4">
-                    <InfoRow icon={<User />} label="Age / Gender" value={`${profile?.age} y/o, ${profile?.gender}`} />
-                    <InfoRow icon={<Briefcase />} label="Occupation" value={profile?.occupation} />
-                    <InfoRow icon={<MapPin />} label="Work Location" value={profile?.location} />
-                    <div className="pt-2">
-                        <span className="mb-1 block text-xs text-zinc-400">About Me</span>
-                        <p className="text-sm leading-relaxed text-zinc-700">{profile?.selfIntroduction || "No introduction yet."}</p>
+        {/* Personal Info */}
+        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+            <h3 className="mb-6 text-xs font-bold uppercase tracking-wider text-zinc-600">Personal Info</h3>
+            <div className="space-y-4">
+                <InfoRow icon={<User />} label="Age / Gender" value={`${profile?.age} y/o, ${profile?.gender}`} />
+                <InfoRow icon={<Flag />} label="Nationality" value={profile?.nationality} />
+                <InfoRow icon={<Briefcase />} label="Occupation" value={profile?.occupation} />
+                <InfoRow icon={<MapPin />} label="Work Location" value={profile?.location} />
+                <div className="pt-2">
+                    <div className="flex items-center gap-2 mb-2">
+                       <MessageSquare className="h-4 w-4 text-zinc-500" />
+                       <span className="text-xs font-medium text-zinc-500">About Me</span>
                     </div>
+                    <p className="text-sm leading-relaxed text-zinc-800 pl-6 border-l-2 border-zinc-200 font-medium">{profile?.selfIntroduction || "No introduction yet."}</p>
                 </div>
+                {profile?.hobbies && profile.hobbies.length > 0 && (
+                   <div className="pt-2">
+                       <div className="flex items-center gap-2 mb-2">
+                          <Heart className="h-4 w-4 text-zinc-500" />
+                          <span className="text-xs font-medium text-zinc-500">Hobbies</span>
+                       </div>
+                       <div className="flex flex-wrap gap-2 pl-6">
+                          {profile.hobbies.map(h => (
+                             <span key={h} className="px-3 py-1 bg-zinc-100 text-xs text-zinc-700 rounded-md font-bold">{h}</span>
+                          ))}
+                       </div>
+                   </div>
+                )}
             </div>
-
-            {/* Preferences */}
-            <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-                <h3 className="mb-6 text-xs font-bold uppercase tracking-wider text-zinc-400">Preferences</h3>
-                <div className="space-y-4">
-                    <InfoRow icon={<Wallet />} label="Budget" value={`RM ${profile?.budget} / month`} />
-                    <InfoRow icon={<Calendar />} label="Move-in Date" value={profile?.moveinDate ? new Date(profile?.moveinDate.toDate?.() || profile.moveinDate).toLocaleDateString() : "Not set"} />
-                    <div className="grid grid-cols-2 gap-4">
-                         <div className="rounded-lg bg-zinc-50 p-3">
-                            <span className="text-xs text-zinc-400">Room Type</span>
-                            <p className="font-semibold text-sm">{profile?.roomType}</p>
-                         </div>
-                         <div className="rounded-lg bg-zinc-50 p-3">
-                            <span className="text-xs text-zinc-400">Pax</span>
-                            <p className="font-semibold text-sm">{profile?.pax} Person</p>
-                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <button onClick={handleLogout} className="w-full rounded-xl border border-red-100 bg-red-50 py-3 text-sm font-bold text-red-600 transition-colors hover:bg-red-100">
-                <LogOut className="mr-2 inline-block h-4 w-4" /> Sign Out
-            </button>
         </div>
+
+        {/* Preferences */}
+        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+            <h3 className="mb-6 text-xs font-bold uppercase tracking-wider text-zinc-600">Preferences</h3>
+            <div className="space-y-4">
+                <InfoRow 
+                    icon={<Calendar />} 
+                    label="Move-in Date" 
+                    value={profile?.moveinDate ? new Date(profile.moveinDate.seconds ? profile.moveinDate.seconds * 1000 : profile.moveinDate).toLocaleDateString() : "Not set"} 
+                />
+                
+                {profile?.preferredAreas && profile.preferredAreas.length > 0 && (
+                   <div className="py-2">
+                       <div className="flex items-center gap-4 mb-2">
+                           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 shrink-0">
+                               <MapPin size={14} />
+                           </div>
+                           <span className="text-xs font-medium text-zinc-500">Preferred Areas</span>
+                       </div>
+                       <div className="flex flex-wrap gap-2 pl-12">
+                          {profile.preferredAreas.map(area => (
+                             <span key={area} className="px-3 py-1 border border-zinc-200 bg-zinc-50 text-xs text-zinc-700 rounded-md font-bold">{area}</span>
+                          ))}
+                       </div>
+                   </div>
+                )}
+
+                <InfoRow icon={<Wallet />} label="Budget" value={`RM ${profile?.budget} / month`} />
+                <div className="grid grid-cols-2 gap-4 pt-2">
+                        <div className="rounded-xl bg-zinc-50 p-4 border border-zinc-100">
+                            <span className="text-xs font-bold text-zinc-500 block mb-1">Room Type</span>
+                            <p className="font-bold text-sm text-zinc-900">{profile?.roomType}</p>
+                        </div>
+                        <div className="rounded-xl bg-zinc-50 p-4 border border-zinc-100">
+                            <span className="text-xs font-bold text-zinc-500 block mb-1">Property Type</span>
+                            <p className="font-bold text-sm text-zinc-900">{profile?.propertyType}</p>
+                        </div>
+                        <div className="rounded-xl bg-zinc-50 p-4 border border-zinc-100">
+                            <span className="text-xs font-bold text-zinc-500 block mb-1">Pax</span>
+                            <p className="font-bold text-sm text-zinc-900">{profile?.pax} Person</p>
+                        </div>
+                        <div className="rounded-xl bg-zinc-50 p-4 border border-zinc-100">
+                            <span className="text-xs font-bold text-zinc-500 block mb-1">Pets</span>
+                            <p className="font-bold text-sm text-zinc-900">{profile?.pets === 'Yes' ? 'Allowed' : 'Not Allowed'}</p>
+                        </div>
+                </div>
+            </div>
+        </div>
+
+        <button onClick={handleLogout} className="w-full rounded-xl border border-red-200 bg-red-50 py-4 text-sm font-bold text-red-600 transition-colors hover:bg-red-100">
+            <LogOut className="mr-2 inline-block h-4 w-4" /> Sign Out
+        </button>
       </main>
 
       {/* --- EDIT MODAL --- */}
       {isEditing && profile && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="flex h-full max-h-[90vh] w-full max-w-xl flex-col rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-4">
-              <h2 className="font-bold text-lg">Edit Profile</h2>
-              <button onClick={() => setIsEditing(false)} className="rounded-full p-1 hover:bg-zinc-100"><X className="h-5 w-5" /></button>
-            </div>
-            
-            <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                 <InputGroup label="Display Name" value={profile.displayName} onChange={(v: string) => setProfile({...profile, displayName: v})} />
-                 <InputGroup label="Age" type="number" value={profile.age} onChange={(v: string) => setProfile({...profile, age: parseInt(v)})} />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                 <div>
-                    <label className="mb-1 block text-xs font-bold text-zinc-500">Gender</label>
-                    <select 
-                        value={profile.gender}
-                        onChange={(e) => setProfile({...profile, gender: e.target.value})}
-                        className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-black"
-                    >
-                        <option>Male</option><option>Female</option><option>Mix</option>
-                    </select>
-                 </div>
-                 <InputGroup label="Occupation" value={profile.occupation} onChange={(v: string) => setProfile({...profile, occupation: v})} />
-              </div>
-              <InputGroup label="Work Location (for Commute)" value={profile.location} onChange={(v: string) => setProfile({...profile, location: v})} />
-              
-              <div>
-                 <label className="mb-1 block text-xs font-bold text-zinc-500">Bio</label>
-                 <textarea 
-                    value={profile.selfIntroduction}
-                    onChange={(e) => setProfile({...profile, selfIntroduction: e.target.value})}
-                    rows={3}
-                    className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-black"
-                 ></textarea>
-              </div>
-
-              <div className="h-px bg-zinc-100 my-4"></div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                 <InputGroup label="Budget (RM)" type="number" value={profile.budget} onChange={(v: string) => setProfile({...profile, budget: parseInt(v)})} />
-                 <InputGroup label="Move-in Date" type="date" value={"" /* Date handling omitted for brevity, stick to string or moment */} onChange={(v: string) => console.log(v)} />
-              </div>
-            </form>
-
-            <div className="border-t border-zinc-100 px-6 py-4">
-              <button onClick={handleSave} className="w-full rounded-xl bg-black py-3 font-bold text-white hover:bg-zinc-800">Save Changes</button>
-            </div>
-          </div>
-        </div>
+        <EditModal 
+            initialProfile={profile} 
+            onClose={() => setIsEditing(false)} 
+            onSave={handleSave}
+            saving={saving}
+        />
       )}
     </div>
   );
 }
 
-// Helper Components
+// --- Helpers & Sub-Components ---
+
 function InfoRow({ icon, label, value }: any) {
     return (
         <div className="flex items-center gap-4">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-100 text-zinc-500">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 shrink-0">
                 {React.cloneElement(icon, { size: 14 })}
             </div>
             <div>
-                <p className="text-xs text-zinc-400">{label}</p>
-                <p className="font-semibold text-zinc-900 text-sm">{value || "-"}</p>
+                <p className="text-xs font-medium text-zinc-500">{label}</p>
+                <p className="font-bold text-zinc-900 text-sm">{value || "Not specified"}</p>
             </div>
         </div>
     );
 }
 
-function InputGroup({ label, value, onChange, type="text" }: any) {
+// Separate Edit Modal Component for cleaner code
+function EditModal({ initialProfile, onClose, onSave, saving }: { 
+    initialProfile: UserProfile, 
+    onClose: () => void, 
+    onSave: (e: React.FormEvent, p: UserProfile, f?: File) => void,
+    saving: boolean
+}) {
+    const [formData, setFormData] = useState<UserProfile>(initialProfile);
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string>(initialProfile.profileImageUrl);
+    
+    // List inputs
+    const [hobbyInput, setHobbyInput] = useState("");
+    const [areaInput, setAreaInput] = useState("");
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setImageFile(file);
+            setPreviewUrl(URL.createObjectURL(file));
+        }
+    };
+
+    const addHobby = () => {
+        if (hobbyInput.trim()) {
+            setFormData({...formData, hobbies: [...formData.hobbies, hobbyInput.trim()]});
+            setHobbyInput("");
+        }
+    };
+
+    const addArea = () => {
+        if (areaInput.trim()) {
+            setFormData({...formData, preferredAreas: [...formData.preferredAreas, areaInput.trim()]});
+            setAreaInput("");
+        }
+    };
+
+    const removeHobby = (index: number) => {
+        const newHobbies = [...formData.hobbies];
+        newHobbies.splice(index, 1);
+        setFormData({...formData, hobbies: newHobbies});
+    };
+
+    const removeArea = (index: number) => {
+        const newAreas = [...formData.preferredAreas];
+        newAreas.splice(index, 1);
+        setFormData({...formData, preferredAreas: newAreas});
+    };
+
+    // Helper for date formatting string YYYY-MM-DD
+    const getInitialDate = () => {
+        if(!formData.moveinDate) return "";
+        try {
+            const d = formData.moveinDate.seconds ? new Date(formData.moveinDate.seconds * 1000) : new Date(formData.moveinDate);
+            return d.toISOString().split('T')[0];
+        } catch(e) { return ""; }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="flex h-full max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4 bg-white z-10">
+              <h2 className="font-bold text-lg text-zinc-900">Edit Profile</h2>
+              <button onClick={onClose} className="rounded-full p-1 hover:bg-zinc-100 text-zinc-500"><X className="h-5 w-5" /></button>
+            </div>
+            
+            <form onSubmit={(e) => onSave(e, formData, imageFile ? imageFile : undefined)} className="flex-1 overflow-y-auto p-6 space-y-6">
+              
+              {/* Image Picker */}
+              <div className="flex justify-center">
+                  <div className="relative group cursor-pointer">
+                      <div className="h-24 w-24 rounded-full overflow-hidden border-2 border-zinc-200 bg-zinc-50">
+                          {previewUrl ? (
+                              <img src={previewUrl} className="h-full w-full object-cover" />
+                          ) : (
+                              <div className="h-full w-full flex items-center justify-center text-zinc-400"><User /></div>
+                          )}
+                      </div>
+                      <label className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                          <Camera className="text-white h-6 w-6" />
+                          <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+                      </label>
+                  </div>
+              </div>
+
+              {/* Personal Section */}
+              <div className="space-y-4">
+                  <h3 className="font-bold text-xs uppercase text-zinc-600 tracking-wider border-b border-zinc-200 pb-2">Personal</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <InputGroup label="Display Name" value={formData.displayName} onChange={(v) => setFormData({...formData, displayName: v})} />
+                    <InputGroup label="Age" type="number" value={formData.age} onChange={(v) => setFormData({...formData, age: parseInt(v)})} />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <SelectGroup 
+                        label="Gender" 
+                        value={formData.gender} 
+                        options={["Male", "Female", "Mix", "Not specified"]}
+                        onChange={(v) => setFormData({...formData, gender: v})} 
+                    />
+                    <InputGroup label="Nationality" value={formData.nationality} onChange={(v) => setFormData({...formData, nationality: v})} />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <InputGroup label="Occupation" value={formData.occupation} onChange={(v) => setFormData({...formData, occupation: v})} />
+                     <InputGroup label="Work Location (Geocoded)" value={formData.location} onChange={(v) => setFormData({...formData, location: v})} />
+                  </div>
+                  
+                  <div>
+                    <label className="mb-1 block text-xs font-bold text-zinc-700">Bio</label>
+                    <textarea 
+                        value={formData.selfIntroduction}
+                        onChange={(e) => setFormData({...formData, selfIntroduction: e.target.value})}
+                        rows={3}
+                        placeholder="Tell us about yourself..."
+                        className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-500 outline-none focus:border-black transition-colors"
+                    ></textarea>
+                  </div>
+
+                  {/* Hobbies Input */}
+                  <div>
+                     <label className="mb-1 block text-xs font-bold text-zinc-700">Hobbies</label>
+                     <div className="flex gap-2 mb-2">
+                        <input 
+                            value={hobbyInput} 
+                            onChange={(e) => setHobbyInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addHobby())}
+                            className="flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-500 outline-none focus:border-black" 
+                            placeholder="Add a hobby..."
+                        />
+                        <button type="button" onClick={addHobby} className="bg-zinc-800 text-white px-3 rounded-lg hover:bg-black"><Plus className="h-4 w-4" /></button>
+                     </div>
+                     <div className="flex flex-wrap gap-2">
+                        {formData.hobbies.map((h, i) => (
+                            <span key={i} className="bg-zinc-100 text-zinc-800 px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1 border border-zinc-200">
+                                {h} <button type="button" onClick={() => removeHobby(i)}><X className="h-3 w-3 text-zinc-500 hover:text-red-500" /></button>
+                            </span>
+                        ))}
+                     </div>
+                  </div>
+              </div>
+
+              {/* Preferences Section */}
+              <div className="space-y-4">
+                  <h3 className="font-bold text-xs uppercase text-zinc-600 tracking-wider border-b border-zinc-200 pb-2">Preferences</h3>
+                  
+                  {/* Preferred Areas */}
+                  <div>
+                     <label className="mb-1 block text-xs font-bold text-zinc-700">Preferred Areas (Geocoded)</label>
+                     <div className="flex gap-2 mb-2">
+                        <input 
+                            value={areaInput} 
+                            onChange={(e) => setAreaInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addArea())}
+                            className="flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-500 outline-none focus:border-black" 
+                            placeholder="e.g. Bangsar, Mont Kiara..."
+                        />
+                        <button type="button" onClick={addArea} className="bg-zinc-800 text-white px-3 rounded-lg hover:bg-black"><Plus className="h-4 w-4" /></button>
+                     </div>
+                     <div className="flex flex-wrap gap-2">
+                        {formData.preferredAreas.map((area, i) => (
+                            <span key={i} className="bg-purple-50 text-purple-700 px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1 border border-purple-100">
+                                {area} <button type="button" onClick={() => removeArea(i)}><X className="h-3 w-3 text-purple-400 hover:text-red-500" /></button>
+                            </span>
+                        ))}
+                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                     <InputGroup label="Budget (RM)" type="number" value={formData.budget} onChange={(v) => setFormData({...formData, budget: parseInt(v)})} />
+                     
+                     <div>
+                        <label className="mb-1 block text-xs font-bold text-zinc-700">Move-in Date</label>
+                        <input 
+                            type="date"
+                            value={getInitialDate()}
+                            onChange={(e) => setFormData({...formData, moveinDate: new Date(e.target.value)})}
+                            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 outline-none focus:border-black"
+                        />
+                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <SelectGroup 
+                        label="Room Type" 
+                        value={formData.roomType} 
+                        options={["Single", "Middle", "Master", "Any"]}
+                        onChange={(v) => setFormData({...formData, roomType: v})} 
+                    />
+                     <SelectGroup 
+                        label="Property Type" 
+                        value={formData.propertyType} 
+                        options={["Condominium", "Apartment", "Landed House", "Studio"]}
+                        onChange={(v) => setFormData({...formData, propertyType: v})} 
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <SelectGroup 
+                        label="Pets" 
+                        value={formData.pets} 
+                        options={["Yes", "No"]}
+                        onChange={(v) => setFormData({...formData, pets: v})} 
+                    />
+                     <div>
+                        <label className="mb-1 block text-xs font-bold text-zinc-700">Pax ({formData.pax})</label>
+                        <input 
+                            type="range" min="1" max="5" 
+                            value={formData.pax} 
+                            onChange={(e) => setFormData({...formData, pax: parseInt(e.target.value)})}
+                            className="w-full accent-black cursor-pointer"
+                        />
+                     </div>
+                  </div>
+              </div>
+
+            </form>
+
+            <div className="border-t border-zinc-200 px-6 py-4 bg-white z-10">
+              <button 
+                onClick={(e) => onSave(e, formData, imageFile ? imageFile : undefined)} 
+                disabled={saving}
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-black py-3 font-bold text-white hover:bg-zinc-800 disabled:opacity-50"
+              >
+                {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                {saving ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+    );
+}
+
+function InputGroup({ label, value, onChange, type="text" }: { label: string, value: any, onChange: (v: string) => void, type?: string }) {
     return (
         <div>
-            <label className="mb-1 block text-xs font-bold text-zinc-500">{label}</label>
+            <label className="mb-1 block text-xs font-bold text-zinc-700">{label}</label>
             <input 
                 type={type} 
                 value={value || ""} 
                 onChange={(e) => onChange(e.target.value)}
-                className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-black"
+                placeholder={label} // Adding placeholder as label name
+                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-500 outline-none focus:border-black transition-colors"
             />
         </div>
     );
 }
 
-import React from "react";
+function SelectGroup({ label, value, options, onChange }: { label: string, value: string, options: string[], onChange: (v: string) => void }) {
+    return (
+        <div>
+            <label className="mb-1 block text-xs font-bold text-zinc-700">{label}</label>
+            <div className="relative">
+                <select 
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                    className="w-full appearance-none rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-black transition-colors"
+                >
+                    {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+                <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500">
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                </div>
+            </div>
+        </div>
+    );
+}

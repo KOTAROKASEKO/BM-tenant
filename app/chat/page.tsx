@@ -8,12 +8,12 @@ import {
 } from "lucide-react";
 import { 
   collection, query, where, or, orderBy, onSnapshot, 
-  addDoc, serverTimestamp, doc, updateDoc, getDoc 
+  addDoc, serverTimestamp, doc, updateDoc, getDoc,
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import moment from "moment";
-import Link from "next/link"; // Required for property link
+import Link from "next/link"; 
 
 type Thread = {
   id: string;
@@ -31,7 +31,7 @@ type Message = {
   whoSentId: string;
   timestamp: any;
   messageType: "text" | "image" | "property_template";
-  remoteUrl?: string; // Added to support image messages
+  remoteUrl?: string; 
 };
 
 export default function ChatPage() {
@@ -143,12 +143,10 @@ export default function ChatPage() {
 
   // ★ HELPER: Render Different Message Types
   const renderMessageContent = (msg: Message) => {
-    // 1. Text Message
     if (msg.messageType === "text") {
       return <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>;
     }
 
-    // 2. Image Message
     if (msg.messageType === "image") {
        return (
          <img 
@@ -159,10 +157,9 @@ export default function ChatPage() {
        );
     }
 
-    // 3. Property Card Message
     if (msg.messageType === "property_template") {
       try {
-        const data = JSON.parse(msg.text); // Parse the JSON string
+        const data = JSON.parse(msg.text);
         const cover = (data.photoUrls && data.photoUrls.length > 0) ? data.photoUrls[0] : "https://placehold.co/300x200?text=No+Image";
         
         return (
@@ -194,6 +191,24 @@ export default function ChatPage() {
     return <p className="text-red-500">Unknown message type</p>;
   };
 
+  // ★ HELPER: Shimmer Skeleton for Threads
+  const ThreadListSkeleton = () => (
+    <div className="animate-pulse">
+      {[...Array(6)].map((_, i) => (
+        <div key={i} className="flex items-center gap-3 border-b border-zinc-50 p-4">
+          <div className="h-12 w-12 shrink-0 rounded-full bg-zinc-200" />
+          <div className="flex-1 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="h-4 w-24 rounded bg-zinc-200" />
+              <div className="h-3 w-10 rounded bg-zinc-200" />
+            </div>
+            <div className="h-3 w-3/4 rounded bg-zinc-200" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <div className="flex h-screen flex-col bg-zinc-50 font-sans">
       <Navbar />
@@ -213,25 +228,32 @@ export default function ChatPage() {
               <input type="text" placeholder="Search chats..." className="w-full rounded-full border border-zinc-200 bg-zinc-50 py-2 pl-9 pr-4 text-sm outline-none focus:border-black focus:ring-1 focus:ring-black" />
             </div>
           </div>
+          
           <div className="flex-1 overflow-y-auto">
-             {threads.map((thread) => (
-                <div 
-                  key={thread.id}
-                  onClick={() => { setActiveThreadId(thread.id); setShowMobileChat(true); }}
-                  className={`cursor-pointer border-b border-zinc-50 p-4 transition-colors hover:bg-zinc-50 ${activeThreadId === thread.id ? "bg-zinc-100" : ""}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <img src={thread.otherUserPhoto || `https://ui-avatars.com/api/?name=${thread.otherUserName}`} className="h-12 w-12 rounded-full border border-zinc-200 object-cover" />
-                    <div className="min-w-0 flex-1">
-                      <div className="mb-1 flex items-baseline justify-between">
-                        <span className={`truncate text-sm font-bold ${thread.unreadCount > 0 ? "text-black" : "text-zinc-700"}`}>{thread.otherUserName}</span>
-                        <span className="text-[10px] text-zinc-400">{thread.timestamp ? moment(thread.timestamp?.toDate()).fromNow(true) : ""}</span>
+             {loading ? (
+                // Show Shimmer when loading
+                <ThreadListSkeleton />
+             ) : (
+                // Show List when loaded
+                threads.map((thread) => (
+                    <div 
+                      key={thread.id}
+                      onClick={() => { setActiveThreadId(thread.id); setShowMobileChat(true); }}
+                      className={`cursor-pointer border-b border-zinc-50 p-4 transition-colors hover:bg-zinc-50 ${activeThreadId === thread.id ? "bg-zinc-100" : ""}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <img src={thread.otherUserPhoto || `https://ui-avatars.com/api/?name=${thread.otherUserName}`} className="h-12 w-12 rounded-full border border-zinc-200 object-cover" />
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1 flex items-baseline justify-between">
+                            <span className={`truncate text-sm font-bold ${thread.unreadCount > 0 ? "text-black" : "text-zinc-700"}`}>{thread.otherUserName}</span>
+                            <span className="text-[10px] text-zinc-400">{thread.timestamp ? moment(thread.timestamp?.toDate()).fromNow(true) : ""}</span>
+                          </div>
+                          <p className={`truncate text-xs ${thread.unreadCount > 0 ? "font-bold text-black" : "text-zinc-500"}`}>{thread.lastMessage}</p>
+                        </div>
                       </div>
-                      <p className={`truncate text-xs ${thread.unreadCount > 0 ? "font-bold text-black" : "text-zinc-500"}`}>{thread.lastMessage}</p>
                     </div>
-                  </div>
-                </div>
-              ))}
+                ))
+             )}
           </div>
         </aside>
 
@@ -260,7 +282,6 @@ export default function ChatPage() {
                   const isMe = msg.whoSentId === user?.uid;
                   const isTemplate = msg.messageType === "property_template";
                   
-                  // Conditional styling: Templates get no padding/bg, Text gets bubbles
                   const bubbleClass = isTemplate 
                     ? "max-w-[85%] bg-transparent p-0 shadow-none border-none"
                     : `max-w-[75%] rounded-2xl px-4 py-3 text-sm shadow-sm ${isMe ? "bg-black text-white rounded-tr-sm" : "bg-white border border-zinc-200 text-zinc-800 rounded-tl-sm"}`;
