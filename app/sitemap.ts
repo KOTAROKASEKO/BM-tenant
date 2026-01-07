@@ -1,6 +1,6 @@
 // app/sitemap.ts (テナント側プロジェクト)
 import { MetadataRoute } from 'next';
-import { adminDb } from '@/lib/firebase-admin'; 
+import { adminDb } from '../lib/firebase-admin'; 
 
 const BASE_URL = 'https://bm-tenant.vercel.app';
 
