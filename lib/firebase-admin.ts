@@ -18,9 +18,12 @@ if (!serviceAccount.projectId || !serviceAccount.clientEmail || !serviceAccount.
 
 // 3. アプリがまだ初期化されていない場合のみ初期化を実行
 if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-  });
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  databaseURL: "https://whatsappclone-5ad8f-default-rtdb.firebaseio.com"
+});
+
 }
 
 // 4. Firestoreなどのサービスをエクスポート
