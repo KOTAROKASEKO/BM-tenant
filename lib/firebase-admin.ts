@@ -1,22 +1,24 @@
-// lib/firebase-admin.ts
+// app-tenant/lib/firebase-admin.ts
 import * as admin from 'firebase-admin';
 
-if (!admin.apps.length) {
-  try {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        // 改行文字（\n）が正しく読み込まれるように処理
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      }),
-    });
-  } catch (error) {
-    console.error('Firebase admin initialization error', error);
-  }
+const serviceAccount = {
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+  privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+};
+
+// Check if variables exist before initializing to avoid vague Firebase errors
+if (!serviceAccount.projectId || !serviceAccount.clientEmail || !serviceAccount.privateKey) {
+  throw new Error(
+    "Missing Firebase Admin environment variables. " +
+    "Ensure FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY are set."
+  );
 }
 
-// 他のファイルで使用するためにエクスポート
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+  });
+}
+
 export const adminDb = admin.firestore();
-export const adminAuth = admin.auth();
-export const adminStorage = admin.storage();
