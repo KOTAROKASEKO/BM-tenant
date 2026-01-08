@@ -1,30 +1,27 @@
 // app-tenant/lib/firebase-admin.ts
 import * as admin from 'firebase-admin';
 
+// 1. 環境変数をオブジェクトにまとめる（この時点で改行も処理しておく）
 const serviceAccount = {
   projectId: process.env.FIREBASE_PROJECT_ID,
   clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
   privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
 };
 
-// Check if variables exist before initializing to avoid vague Firebase errors
+// 2. 必須変数が揃っているか厳格にチェック
 if (!serviceAccount.projectId || !serviceAccount.clientEmail || !serviceAccount.privateKey) {
   throw new Error(
     "Missing Firebase Admin environment variables. " +
-    "Ensure FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY are set."
+    "Check FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY."
   );
 }
-const privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
+// 3. アプリがまだ初期化されていない場合のみ初期化を実行
 if (!admin.apps.length) {
   admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      // The fix: replace escaped \n with actual newlines
-      privateKey: privateKey ? privateKey.replace(/\\n/g, '\n') : undefined,
-    }),
+    credential: admin.credential.cert(serviceAccount),
   });
 }
 
+// 4. Firestoreなどのサービスをエクスポート
 export const adminDb = admin.firestore();
