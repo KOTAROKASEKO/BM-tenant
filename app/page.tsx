@@ -105,7 +105,6 @@ export default function HomePage() {
 
       const filterString = filterConditions.join(" AND ");
 
-      // --- C. EXECUTE SEARCH ---
       const searchParams: any = {
         indexName: "bilik_match_index",
         query: finalQueryText,
