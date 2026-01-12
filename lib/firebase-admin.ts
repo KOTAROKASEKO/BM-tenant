@@ -8,7 +8,6 @@ const serviceAccount = {
   privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
 };
 
-// 2. 必須変数が揃っているか厳格にチェック
 if (!serviceAccount.projectId || !serviceAccount.clientEmail || !serviceAccount.privateKey) {
   throw new Error(
     "Missing Firebase Admin environment variables. " +

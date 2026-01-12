@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import { 
-  User, Briefcase, MapPin, Calendar, Wallet, 
+  User, Briefcase, Calendar, Wallet, 
   LogOut, Edit2, Loader2, X, Camera, Plus, 
-  Flag, Heart, Bookmark, MessageSquare, ArrowRight
+  Flag, MapPin, Bookmark, MessageSquare, ArrowRight, AlertCircle
 } from "lucide-react";
 import { auth, db } from "@/lib/firebase"; 
 import { onAuthStateChanged, signOut } from "firebase/auth";
@@ -13,7 +13,8 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import Link from "next/link";
 import React from "react";
 
-// --- Type Definition (Matches Flutter Model) ---
+// --- Type Definition ---
+// 変更点: hobbies, location (Work Location) を削除
 type UserProfile = {
   uid?: string;
   displayName: string;
@@ -23,7 +24,7 @@ type UserProfile = {
   gender: string;
   nationality: string;
   occupation: string;
-  location: string;
+  // location: string; // 削除: 不要
   selfIntroduction: string;
   moveinDate?: any;
   budget: number;
@@ -31,7 +32,7 @@ type UserProfile = {
   propertyType: string;
   pax: number;
   pets: string;
-  hobbies: string[];
+  // hobbies: string[]; // 削除: 不要
   preferredAreas: string[];
   _geoloc?: Array<{ lat: number; lng: number }>;
 };
@@ -78,24 +79,28 @@ export default function ProfilePage() {
         if (snap.exists()) {
           setProfile(snap.data() as UserProfile);
         } else {
+          // 変更点: 不要なフィールドを削除し、予算の初期値を0に設定
           setProfile({
-            displayName: currentUser.displayName || "New User",
+            displayName: currentUser.displayName || "",
             email: currentUser.email || "",
             profileImageUrl: currentUser.photoURL || "",
             age: 25,
             gender: "Not specified",
             nationality: "Not specified",
             occupation: "Not specified",
-            location: "Not specified",
+            // location: "Not specified", // 削除
             selfIntroduction: "",
-            budget: 1000,
+            budget: 0, // 初期値を0にして入力を促す
+            moveinDate: null, // 明示的にnull
             roomType: "Middle",
             propertyType: "Condominium",
             pax: 1,
             pets: "No",
-            hobbies: [],
+            // hobbies: [], // 削除
             preferredAreas: [],
           });
+          // 新規ユーザーの場合は自動的に編集モードにする（オプション）
+          setIsEditing(true);
         }
       } catch (err) {
         console.error("Fetch Error:", err);
@@ -113,7 +118,7 @@ export default function ProfilePage() {
 
   // --- SAVE HANDLER ---
   const handleSave = async (e: React.FormEvent, editedProfile: UserProfile, file?: File | null) => {
-    e.preventDefault();
+    // バリデーションは EditModal 内で行い、ここには有効なデータのみが来る想定ですが、念のため
     if (!user) return;
     setSaving(true);
     
@@ -121,17 +126,14 @@ export default function ProfilePage() {
       let finalImageUrl = editedProfile.profileImageUrl;
 
       if (file) {
-        // Storage not available - skip image upload
         console.warn("Storage not configured - skipping image upload");
       }
 
       const geolocList: Array<{ lat: number; lng: number }> = [];
       
-      if (editedProfile.location && editedProfile.location !== "Not specified") {
-        const loc = await getLatLng(editedProfile.location);
-        if (loc) geolocList.push(loc);
-      }
+      // 変更点: Work Locationのジオコーディング処理を削除
 
+      // Preferred Areasのジオコーディング
       for (const area of editedProfile.preferredAreas) {
          const loc = await getLatLng(area);
          if (loc) geolocList.push(loc);
@@ -171,11 +173,11 @@ export default function ProfilePage() {
                 <img src={profile.profileImageUrl} alt="Profile" className="h-full w-full object-cover" />
              ) : (
                 <div className="flex h-full w-full items-center justify-center text-3xl font-bold text-zinc-900">
-                    {profile?.displayName?.charAt(0).toUpperCase()}
+                    {profile?.displayName?.charAt(0).toUpperCase() || <User />}
                 </div>
              )}
           </div>
-          <h1 className="text-2xl font-bold text-zinc-900">{profile?.displayName}</h1>
+          <h1 className="text-2xl font-bold text-zinc-900">{profile?.displayName || "No Name"}</h1>
           <p className="text-sm text-zinc-600 mb-6 font-medium">{profile?.email}</p>
           
           <button 
@@ -208,7 +210,8 @@ export default function ProfilePage() {
                 <InfoRow icon={<User />} label="Age / Gender" value={`${profile?.age} y/o, ${profile?.gender}`} />
                 <InfoRow icon={<Flag />} label="Nationality" value={profile?.nationality} />
                 <InfoRow icon={<Briefcase />} label="Occupation" value={profile?.occupation} />
-                <InfoRow icon={<MapPin />} label="Work Location" value={profile?.location} />
+                {/* 変更点: Work Location の表示を削除 */}
+                
                 <div className="pt-2">
                     <div className="flex items-center gap-2 mb-2">
                        <MessageSquare className="h-4 w-4 text-zinc-500" />
@@ -216,19 +219,7 @@ export default function ProfilePage() {
                     </div>
                     <p className="text-sm leading-relaxed text-zinc-800 pl-6 border-l-2 border-zinc-200 font-medium">{profile?.selfIntroduction || "No introduction yet."}</p>
                 </div>
-                {profile?.hobbies && profile.hobbies.length > 0 && (
-                   <div className="pt-2">
-                       <div className="flex items-center gap-2 mb-2">
-                          <Heart className="h-4 w-4 text-zinc-500" />
-                          <span className="text-xs font-medium text-zinc-500">Hobbies</span>
-                       </div>
-                       <div className="flex flex-wrap gap-2 pl-6">
-                          {profile.hobbies.map(h => (
-                             <span key={h} className="px-3 py-1 bg-zinc-100 text-xs text-zinc-700 rounded-md font-bold">{h}</span>
-                          ))}
-                       </div>
-                   </div>
-                )}
+                {/* 変更点: Hobbies の表示を削除 */}
             </div>
         </div>
 
@@ -242,7 +233,7 @@ export default function ProfilePage() {
                     value={profile?.moveinDate ? new Date(profile.moveinDate.seconds ? profile.moveinDate.seconds * 1000 : profile.moveinDate).toLocaleDateString() : "Not set"} 
                 />
                 
-                {profile?.preferredAreas && profile.preferredAreas.length > 0 && (
+                {profile?.preferredAreas && profile.preferredAreas.length > 0 ? (
                    <div className="py-2">
                        <div className="flex items-center gap-4 mb-2">
                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 shrink-0">
@@ -256,9 +247,11 @@ export default function ProfilePage() {
                           ))}
                        </div>
                    </div>
+                ) : (
+                    <InfoRow icon={<MapPin />} label="Preferred Areas" value="Not set" />
                 )}
 
-                <InfoRow icon={<Wallet />} label="Budget" value={`RM ${profile?.budget} / month`} />
+                <InfoRow icon={<Wallet />} label="Budget" value={profile?.budget ? `RM ${profile?.budget} / month` : "Not set"} />
                 <div className="grid grid-cols-2 gap-4 pt-2">
                         <div className="rounded-xl bg-zinc-50 p-4 border border-zinc-100">
                             <span className="text-xs font-bold text-zinc-500 block mb-1">Room Type</span>
@@ -324,9 +317,9 @@ function EditModal({ initialProfile, onClose, onSave, saving }: {
     const [formData, setFormData] = useState<UserProfile>(initialProfile);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string>(initialProfile.profileImageUrl);
+    const [errorMsg, setErrorMsg] = useState(""); // エラーメッセージ用
     
     // List inputs
-    const [hobbyInput, setHobbyInput] = useState("");
     const [areaInput, setAreaInput] = useState("");
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -337,24 +330,11 @@ function EditModal({ initialProfile, onClose, onSave, saving }: {
         }
     };
 
-    const addHobby = () => {
-        if (hobbyInput.trim()) {
-            setFormData({...formData, hobbies: [...formData.hobbies, hobbyInput.trim()]});
-            setHobbyInput("");
-        }
-    };
-
     const addArea = () => {
         if (areaInput.trim()) {
             setFormData({...formData, preferredAreas: [...formData.preferredAreas, areaInput.trim()]});
             setAreaInput("");
         }
-    };
-
-    const removeHobby = (index: number) => {
-        const newHobbies = [...formData.hobbies];
-        newHobbies.splice(index, 1);
-        setFormData({...formData, hobbies: newHobbies});
     };
 
     const removeArea = (index: number) => {
@@ -368,8 +348,42 @@ function EditModal({ initialProfile, onClose, onSave, saving }: {
         if(!formData.moveinDate) return "";
         try {
             const d = formData.moveinDate.seconds ? new Date(formData.moveinDate.seconds * 1000) : new Date(formData.moveinDate);
+            if (isNaN(d.getTime())) return "";
             return d.toISOString().split('T')[0];
         } catch(e) { return ""; }
+    };
+
+    // 変更点: 保存前のバリデーション関数
+    const handleSaveClick = (e: React.FormEvent) => {
+        e.preventDefault();
+        setErrorMsg("");
+
+        // 1. 名前チェック
+        if (!formData.displayName || !formData.displayName.trim()) {
+            setErrorMsg("名前を入力してください (Name is required)");
+            return;
+        }
+
+        // 2. 住みたい場所チェック
+        if (!formData.preferredAreas || formData.preferredAreas.length === 0) {
+            setErrorMsg("住みたい場所を少なくとも1つ追加してください (Please add at least one Preferred Area)");
+            return;
+        }
+
+        // 3. 予算チェック
+        if (!formData.budget || formData.budget <= 0) {
+            setErrorMsg("予算を入力してください (Valid Budget is required)");
+            return;
+        }
+
+        // 4. Move-in Date チェック
+        if (!formData.moveinDate) {
+            setErrorMsg("入居予定日を選択してください (Move-in Date is required)");
+            return;
+        }
+
+        // 全てOKなら保存実行
+        onSave(e, formData, imageFile ? imageFile : undefined);
     };
 
     return (
@@ -377,11 +391,20 @@ function EditModal({ initialProfile, onClose, onSave, saving }: {
           <div className="flex h-full max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4 bg-white z-10">
               <h2 className="font-bold text-lg text-zinc-900">Edit Profile</h2>
+              {/* 閉じるボタンもフォームが無効な場合は押させないようにするか、あるいはそのまま閉じるのを許可するか。通常は閉じるのは許可。 */}
               <button onClick={onClose} className="rounded-full p-1 hover:bg-zinc-100 text-zinc-500"><X className="h-5 w-5" /></button>
             </div>
             
-            <form onSubmit={(e) => onSave(e, formData, imageFile ? imageFile : undefined)} className="flex-1 overflow-y-auto p-6 space-y-6">
+            <form className="flex-1 overflow-y-auto p-6 space-y-6">
               
+              {/* Error Alert */}
+              {errorMsg && (
+                <div className="flex items-center gap-2 rounded-lg bg-red-50 p-4 text-red-600 border border-red-100">
+                    <AlertCircle className="h-5 w-5 shrink-0" />
+                    <p className="text-sm font-bold">{errorMsg}</p>
+                </div>
+              )}
+
               {/* Image Picker */}
               <div className="flex justify-center">
                   <div className="relative group cursor-pointer">
@@ -403,7 +426,7 @@ function EditModal({ initialProfile, onClose, onSave, saving }: {
               <div className="space-y-4">
                   <h3 className="font-bold text-xs uppercase text-zinc-600 tracking-wider border-b border-zinc-200 pb-2">Personal</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <InputGroup label="Display Name" value={formData.displayName} onChange={(v) => setFormData({...formData, displayName: v})} />
+                    <InputGroup label="Display Name *" value={formData.displayName} onChange={(v) => setFormData({...formData, displayName: v})} />
                     <InputGroup label="Age" type="number" value={formData.age} onChange={(v) => setFormData({...formData, age: parseInt(v)})} />
                   </div>
                   
@@ -419,7 +442,7 @@ function EditModal({ initialProfile, onClose, onSave, saving }: {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                      <InputGroup label="Occupation" value={formData.occupation} onChange={(v) => setFormData({...formData, occupation: v})} />
-                     <InputGroup label="Work Location (Geocoded)" value={formData.location} onChange={(v) => setFormData({...formData, location: v})} />
+                     {/* 変更点: Work Location 入力削除 */}
                   </div>
                   
                   <div>
@@ -433,27 +456,7 @@ function EditModal({ initialProfile, onClose, onSave, saving }: {
                     ></textarea>
                   </div>
 
-                  {/* Hobbies Input */}
-                  <div>
-                     <label className="mb-1 block text-xs font-bold text-zinc-700">Hobbies</label>
-                     <div className="flex gap-2 mb-2">
-                        <input 
-                            value={hobbyInput} 
-                            onChange={(e) => setHobbyInput(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addHobby())}
-                            className="flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-500 outline-none focus:border-black" 
-                            placeholder="Add a hobby..."
-                        />
-                        <button type="button" onClick={addHobby} className="bg-zinc-800 text-white px-3 rounded-lg hover:bg-black"><Plus className="h-4 w-4" /></button>
-                     </div>
-                     <div className="flex flex-wrap gap-2">
-                        {formData.hobbies.map((h, i) => (
-                            <span key={i} className="bg-zinc-100 text-zinc-800 px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1 border border-zinc-200">
-                                {h} <button type="button" onClick={() => removeHobby(i)}><X className="h-3 w-3 text-zinc-500 hover:text-red-500" /></button>
-                            </span>
-                        ))}
-                     </div>
-                  </div>
+                  {/* 変更点: Hobbies 入力セクション削除 */}
               </div>
 
               {/* Preferences Section */}
@@ -462,7 +465,7 @@ function EditModal({ initialProfile, onClose, onSave, saving }: {
                   
                   {/* Preferred Areas */}
                   <div>
-                     <label className="mb-1 block text-xs font-bold text-zinc-700">Preferred Areas (Geocoded)</label>
+                     <label className="mb-1 block text-xs font-bold text-zinc-700">Preferred Areas * (Geocoded)</label>
                      <div className="flex gap-2 mb-2">
                         <input 
                             value={areaInput} 
@@ -473,7 +476,8 @@ function EditModal({ initialProfile, onClose, onSave, saving }: {
                         />
                         <button type="button" onClick={addArea} className="bg-zinc-800 text-white px-3 rounded-lg hover:bg-black"><Plus className="h-4 w-4" /></button>
                      </div>
-                     <div className="flex flex-wrap gap-2">
+                     <div className="flex flex-wrap gap-2 min-h-[30px]">
+                        {formData.preferredAreas.length === 0 && <span className="text-xs text-red-400 italic">Required</span>}
                         {formData.preferredAreas.map((area, i) => (
                             <span key={i} className="bg-purple-50 text-purple-700 px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1 border border-purple-100">
                                 {area} <button type="button" onClick={() => removeArea(i)}><X className="h-3 w-3 text-purple-400 hover:text-red-500" /></button>
@@ -483,10 +487,10 @@ function EditModal({ initialProfile, onClose, onSave, saving }: {
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                     <InputGroup label="Budget (RM)" type="number" value={formData.budget} onChange={(v) => setFormData({...formData, budget: parseInt(v)})} />
+                     <InputGroup label="Budget (RM) *" type="number" value={formData.budget} onChange={(v) => setFormData({...formData, budget: parseInt(v)})} />
                      
                      <div>
-                        <label className="mb-1 block text-xs font-bold text-zinc-700">Move-in Date</label>
+                        <label className="mb-1 block text-xs font-bold text-zinc-700">Move-in Date *</label>
                         <input 
                             type="date"
                             value={getInitialDate()}
@@ -534,7 +538,7 @@ function EditModal({ initialProfile, onClose, onSave, saving }: {
 
             <div className="border-t border-zinc-200 px-6 py-4 bg-white z-10">
               <button 
-                onClick={(e) => onSave(e, formData, imageFile ? imageFile : undefined)} 
+                onClick={handleSaveClick} 
                 disabled={saving}
                 className="w-full flex items-center justify-center gap-2 rounded-xl bg-black py-3 font-bold text-white hover:bg-zinc-800 disabled:opacity-50"
               >
@@ -555,7 +559,7 @@ function InputGroup({ label, value, onChange, type="text" }: { label: string, va
                 type={type} 
                 value={value || ""} 
                 onChange={(e) => onChange(e.target.value)}
-                placeholder={label} // Adding placeholder as label name
+                placeholder={label} 
                 className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-500 outline-none focus:border-black transition-colors"
             />
         </div>
