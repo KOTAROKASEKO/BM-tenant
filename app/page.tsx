@@ -1,10 +1,13 @@
+// app/page.tsx
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Navbar from "@/components/Navbar";
-import { Filter, Search, MapPin, Loader2 } from "lucide-react";
+import Navbar from "@/components/Navbar"; // [!code ++]
+import { Filter, Search, MapPin, Loader2, Sparkles, UserPlus, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { liteClient as algoliasearch } from "algoliasearch/lite";
+import { auth } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 // 1. Initialize Client
 const searchClient = algoliasearch(
@@ -15,9 +18,7 @@ const searchClient = algoliasearch(
 // 2. Google Maps API Setup
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
-// Helper: Geocode Address to Lat/Lng
 const getLatLng = async (address: string): Promise<{ lat: number; lng: number } | null> => {
-  console.log("Geocoding address:", address);
   if (!address || !GOOGLE_MAPS_API_KEY) return null;
   try {
     const res = await fetch(
@@ -25,11 +26,8 @@ const getLatLng = async (address: string): Promise<{ lat: number; lng: number } 
         address
       )}&key=${GOOGLE_MAPS_API_KEY}`
     );
-    
     const data = await res.json();
-    console.log("Geocoding response", data);
     if (data.status === "OK" && data.results[0]) {
-      console.log("Geocoding result", data.results[0].geometry.location);
       return data.results[0].geometry.location;
     }
   } catch (e) {
@@ -54,6 +52,10 @@ export default function HomePage() {
   const [hits, setHits] = useState<AlgoliaHit[]>([]);
   const [loading, setLoading] = useState(true);
   
+  // Auth State
+  const [user, setUser] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState({
     minRent: "",
@@ -62,38 +64,40 @@ export default function HomePage() {
     roomType: "any",
   });
 
+  // Auth Listener
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setAuthLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
   // 4. Search Logic
   const performSearch = useCallback(async () => {
     setLoading(true);
 
     try {
-      // --- A. PREPARE LOCATION ---
-      let targetLatLng = "3.1579, 101.7116"; // Default: KLCC
-      let targetRadius: string | number = 20000; // Default: 20km
+      let targetLatLng = "3.1579, 101.7116"; 
+      let targetRadius: string | number = 20000; 
       let finalQueryText = searchQuery;
       let useGeoSearch = false;
 
-      // If user typed something, try to interpret it as a location first
       if (searchQuery.trim()) {
         const coords = await getLatLng(searchQuery);
-        
         if (coords) {
-          // Case 1: Geocoding Successful (e.g., "Bukit Jalil LRT")
           targetLatLng = `${coords.lat}, ${coords.lng}`;
-          targetRadius = 5000; // Search within 5km of the found place
-          finalQueryText = ""; // Clear text to show ALL properties near this location
+          targetRadius = 5000;
+          finalQueryText = ""; 
           useGeoSearch = true;
         } else {
-          // Case 2: Geocoding Failed (e.g., "Master Room") -> Text Search
           useGeoSearch = false;
         }
       } else {
-        // Case 3: No Input -> Default View (KLCC)
         useGeoSearch = true;
         targetRadius = "all"; 
       }
 
-      // --- B. PREPARE FILTERS ---
       const filterConditions = [];
       const min = parseInt(filters.minRent) || 0;
       const max = parseInt(filters.maxRent) || 5000;
@@ -112,11 +116,9 @@ export default function HomePage() {
         filters: filterString,
       };
 
-      // Only apply geo-parameters if we are doing a location-based search
       if (useGeoSearch) {
         searchParams.aroundLatLng = targetLatLng;
         searchParams.aroundRadius = targetRadius;
-        // This ensures the results are sorted by distance from the targetLatLng
       }
 
       const response = await searchClient.search({
@@ -135,11 +137,10 @@ export default function HomePage() {
     }
   }, [searchQuery, filters]);
 
-  // 5. Trigger Search (Debounced)
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       performSearch();
-    }, 500); // Increased debounce slightly to allow typing to finish before geocoding
+    }, 500); 
     return () => clearTimeout(timeoutId);
   }, [performSearch]);
 
@@ -148,14 +149,15 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900 font-sans">
+    <div className="min-h-screen bg-zinc-50 text-zinc-900 font-sans pb-20 lg:pb-0">
+      
+      {/* Updated to use the Component */}
       <Navbar />
 
       <main className="mx-auto flex max-w-7xl gap-8 px-4 py-8">
         
         {/* --- SIDEBAR FILTERS --- */}
         <aside className="hidden h-[calc(100vh-8rem)] w-72 shrink-0 flex-col gap-6 overflow-y-auto rounded-xl border border-zinc-200 bg-white p-6 sticky top-24 lg:flex">
-          {/* ... (Existing Filter UI Code remains exactly the same) ... */}
            <div className="flex items-center justify-between border-b border-zinc-100 pb-4">
             <h3 className="font-bold uppercase tracking-wider text-sm">Filters</h3>
             <button 
@@ -170,7 +172,7 @@ export default function HomePage() {
           </div>
 
           <Link href="/ai-chat" className="group flex w-full items-center justify-center gap-2 rounded-lg bg-black px-4 py-3 text-sm font-bold text-white transition-all hover:bg-zinc-800">
-             Ask AI Assistant
+             <Sparkles className="h-4 w-4 text-purple-400" /> Ask AI Assistant
           </Link>
 
           {/* Room Type */}
@@ -242,12 +244,41 @@ export default function HomePage() {
 
         {/* --- MAIN CONTENT --- */}
         <div className="flex-1">
+          
+          {/* Conversational Benefit Banner (Only if NOT logged in) */}
+          {!user && !authLoading && (
+            <div className="mb-8 overflow-hidden rounded-3xl bg-black p-6 text-white shadow-xl md:p-8 relative group">
+                <div className="absolute top-0 right-0 p-32 bg-purple-600/20 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+                <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                    <div className="space-y-3 max-w-xl">
+                        <div className="flex items-center gap-2 text-purple-300 font-bold uppercase tracking-wider text-xs">
+                            <MessageCircle className="h-4 w-4" />
+                            <span>Efficiency Hack</span>
+                        </div>
+                        <h2 className="text-2xl font-black leading-tight md:text-3xl">
+                            Don't just search. Let agents <br className="hidden md:block"/> come to <span className="text-purple-400 underline decoration-wavy decoration-purple-400/30 underline-offset-4">you</span>.
+                        </h2>
+                        <p className="text-zinc-300 text-sm md:text-base leading-relaxed">
+                            Instead of endless scrolling, create a profile. Agents with your <b>ideal property</b> will talk to you directly. This conversational way to find a property makes room hunting 10x more efficient.
+                        </p>
+                    </div>
+                    <Link 
+                        href="/signup" 
+                        className="shrink-0 whitespace-nowrap rounded-2xl bg-white px-8 py-4 text-sm font-bold text-black shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center gap-2 group-hover:shadow-white/20"
+                    >
+                        <UserPlus className="h-4 w-4" />
+                        Create Free Profile
+                    </Link>
+                </div>
+            </div>
+          )}
+
           {/* Search Bar */}
           <div className="mb-6 relative">
             <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
             <input
               type="text"
-              placeholder="search with city, LRT, University, any place..."
+              placeholder="Search with city, LRT, University, or any place..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full rounded-xl border border-zinc-200 bg-white py-3 pl-11 pr-4 text-sm font-medium shadow-sm outline-none transition-all focus:border-black focus:ring-1 focus:ring-black"

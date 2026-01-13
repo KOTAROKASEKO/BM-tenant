@@ -1,181 +1,240 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Navbar from "@/components/Navbar";
-import { 
-  Mail, Lock, ArrowRight, Loader2, AlertCircle 
-} from "lucide-react";
-import Link from "next/link";
-import { 
-  signInWithEmailAndPassword, 
-  signInWithPopup, 
-  GoogleAuthProvider 
-} from "firebase/auth";
-import { auth } from "@/lib/firebase";
-import { useRouter } from "next/navigation";
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { LayoutDashboard, ArrowRight, UserCog } from 'lucide-react'; 
+
+// --- Firebase Imports ---
+import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { auth, googleProvider, db } from '../../lib/firebase'; // Adjust path if needed
+
+// --- Configuration ---
+const AGENT_LOGIN_URL = "https://agent-site-url.com/login"; 
+
+const ROOM_IMAGES = [
+  "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?q=80&w=2970&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=2880&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?q=80&w=2940&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1484154218962-a1c002085d2f?q=80&w=2970&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1554995207-c18c203602cb?q=80&w=2940&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=2800&auto=format&fit=crop",
+];
+
+const SCROLL_COLS = [
+  [...ROOM_IMAGES, ...ROOM_IMAGES],
+  [...ROOM_IMAGES.reverse(), ...ROOM_IMAGES.reverse()],
+  [...ROOM_IMAGES, ...ROOM_IMAGES],
+];
 
 export default function SignInPage() {
   const router = useRouter();
-  
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  // 1. Handle Email/Password Login
-  const handleEmailSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-
+  // --- Helper: Ensure Tenant Profile Exists ---
+  const ensureTenantProfile = async (user: any) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      // Redirect to Home or Profile
-      router.push("/"); 
-    } catch (err: any) {
-      console.error(err);
-      if (err.code === 'auth/invalid-credential') {
-        setError("Invalid email or password.");
-      } else {
-        setError("Failed to sign in. Please try again.");
-      }
-    } finally {
-      setLoading(false);
+        const docRef = doc(db, "users_prof", user.uid);
+        const docSnap = await getDoc(docRef);
+
+        if (!docSnap.exists()) {
+            // Create new Tenant Profile
+            await setDoc(docRef, {
+                email: user.email,
+                displayName: user.displayName || 'New Tenant',
+                profileImageUrl: user.photoURL || '',
+                bio: "I am looking for a room.",
+                role: "tenant", // Important: Mark as tenant
+                createdAt: serverTimestamp()
+            });
+            console.log("✅ Created new tenant profile");
+        }
+    } catch (err) {
+        console.error("Profile creation failed:", err);
     }
   };
 
-  // 2. Handle Google Login
-  const handleGoogleSignIn = async () => {
-    setError("");
+  // --- Email Login ---
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
     try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      router.push("/");
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        console.log("Logged in:", userCredential.user.uid);
+        
+        // Ensure profile exists (in case they signed up but profile creation failed)
+        await ensureTenantProfile(userCredential.user);
+        
+        router.push('/'); 
     } catch (err: any) {
-      console.error(err);
-      setError("Google sign-in failed.");
+        console.error("Login Error:", err);
+        setError(err.message.replace('Firebase:', '').trim());
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  // --- Google Login ---
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    setError('');
+    
+    try {
+        const result = await signInWithPopup(auth, googleProvider);
+        const user = result.user;
+        console.log("Google Login Success:", user.uid);
+
+        // Create Tenant Profile if first time
+        await ensureTenantProfile(user);
+
+        router.push('/');
+    } catch (err: any) {
+        console.error("Google Login Error:", err);
+        setError(err.message.replace('Firebase:', '').trim());
+    } finally {
+        setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 font-sans">
-      <Navbar />
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden font-sans">
+      
+      {/* --- Autoscrolling Background --- */}
+      <div className="absolute inset-0 z-0 grid grid-cols-3 gap-4 p-4 opacity-60 bg-black/10">
+        <div className="flex flex-col gap-4 animate-scroll-slow">
+            {SCROLL_COLS[0].map((src, i) => (
+                <img key={`c1-${i}`} src={src} className="w-full h-64 object-cover rounded-xl shadow-lg" alt="Room" />
+            ))}
+        </div>
+        <div className="flex flex-col gap-4 animate-scroll-medium -mt-24">
+            {SCROLL_COLS[1].map((src, i) => (
+                <img key={`c2-${i}`} src={src} className="w-full h-64 object-cover rounded-xl shadow-lg" alt="Room" />
+            ))}
+        </div>
+        <div className="flex flex-col gap-4 animate-scroll-fast">
+            {SCROLL_COLS[2].map((src, i) => (
+                <img key={`c3-${i}`} src={src} className="w-full h-64 object-cover rounded-xl shadow-lg" alt="Room" />
+            ))}
+        </div>
+      </div>
 
-      <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-4">
-        <div className="w-full max-w-md overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+      {/* --- Dark Overlay --- */}
+      <div className="absolute inset-0 z-10 bg-black/20 backdrop-blur-[2px]"></div>
+
+      {/* --- Glassmorphism Card --- */}
+      <div className="relative z-20 w-full max-w-md mx-4">
+        <div className="bg-white/20 backdrop-blur-xl border border-white/30 shadow-2xl rounded-3xl p-8 md:p-10 text-white overflow-hidden relative group">
           
-          {/* Header */}
-          <div className="bg-zinc-50 p-8 text-center border-b border-zinc-100">
-            <h1 className="text-2xl font-bold text-zinc-900">Welcome Back</h1>
-            <p className="mt-2 text-sm text-zinc-500">
-              Sign in to continue to BilikMatch
-            </p>
-          </div>
+          {/* Shine Effect */}
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
 
-          {/* Form Container */}
-          <div className="p-8">
-            
+          <div className="relative z-10">
+            <div className="text-center mb-8">
+                <h1 className="text-3xl font-black tracking-tight mb-2 text-white drop-shadow-md">Welcome Back</h1>
+                <p className="text-white/80 text-sm font-medium">Find your perfect room today</p>
+            </div>
+
             {/* Error Message */}
             {error && (
-              <div className="mb-6 flex items-start gap-3 rounded-lg bg-red-50 p-4 text-red-600">
-                <AlertCircle className="h-5 w-5 shrink-0" />
-                <p className="text-sm font-medium">{error}</p>
-              </div>
+                <div className="mb-4 p-3 bg-red-500/80 backdrop-blur-sm rounded-lg text-sm text-center font-medium shadow-lg animate-pulse">
+                    ⚠️ {error}
+                </div>
             )}
 
-            <form onSubmit={handleEmailSignIn} className="space-y-5">
-              
-              {/* Email Input */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase text-zinc-500">Email</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400" />
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="name@example.com"
-                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 py-3 pl-10 pr-4 text-sm font-medium outline-none transition-all focus:border-black focus:bg-white focus:ring-1 focus:ring-black"
-                  />
-                </div>
-              </div>
+            <div className="space-y-5">
+                {/* Email/Pass Form */}
+                <form onSubmit={handleLogin} className="space-y-5">
+                    <div>
+                        <label className="text-xs font-bold uppercase tracking-wider text-white/70 ml-1 mb-1 block">Email</label>
+                        <input 
+                            type="email" 
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/50 transition backdrop-blur-sm"
+                            placeholder="name@example.com"
+                            required
+                        />
+                    </div>
+                    
+                    <div>
+                        <label className="text-xs font-bold uppercase tracking-wider text-white/70 ml-1 mb-1 block">Password</label>
+                        <input 
+                            type="password" 
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/50 transition backdrop-blur-sm"
+                            placeholder="••••••••"
+                            required
+                        />
+                    </div>
 
-              {/* Password Input */}
-              <div className="space-y-1.5">
-                <div className="flex justify-between">
-                  <label className="text-xs font-bold uppercase text-zinc-500">Password</label>
-                  <Link href="/forgot-password" className="text-xs font-semibold text-zinc-400 hover:text-black hover:underline">
-                    Forgot?
-                  </Link>
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400" />
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
-                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 py-3 pl-10 pr-4 text-sm font-medium outline-none transition-all focus:border-black focus:bg-white focus:ring-1 focus:ring-black"
-                  />
-                </div>
-              </div>
+                    <button 
+                        type="submit" 
+                        disabled={loading}
+                        className="w-full bg-white text-black font-bold py-3.5 rounded-xl hover:bg-white/90 active:scale-[0.98] transition shadow-lg flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                        {loading ? 'Signing In...' : (
+                            <>
+                                <span>Sign In</span>
+                                <ArrowRight size={18} />
+                            </>
+                        )}
+                    </button>
+                </form>
 
-              {/* Sign In Button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-black py-3.5 font-bold text-white transition-transform hover:bg-zinc-800 active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Sign In"}
-              </button>
-            </form>
+                {/* Divider */}
+                <div className="relative flex py-2 items-center">
+                    <div className="flex-grow border-t border-white/20"></div>
+                    <span className="flex-shrink-0 mx-4 text-white/50 text-xs font-bold uppercase">Or continue with</span>
+                    <div className="flex-grow border-t border-white/20"></div>
+                </div>
 
-            <div className="relative my-8 text-center">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-zinc-100"></div></div>
-              <span className="relative bg-white px-4 text-xs font-bold text-zinc-400 uppercase tracking-wider">Or continue with</span>
+                {/* Google Button */}
+                <button
+                    onClick={handleGoogleLogin}
+                    disabled={loading}
+                    className="w-full bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold py-3.5 rounded-xl transition active:scale-[0.98] flex items-center justify-center gap-3 backdrop-blur-md disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M23.766 12.2764C23.766 11.4607 23.6999 10.6406 23.5588 9.83807H12.24V14.4591H18.7217C18.4528 15.9494 17.5885 17.2678 16.323 18.1056V21.1039H20.19C22.4608 19.0139 23.766 15.9274 23.766 12.2764Z" fill="#4285F4"/>
+                        <path d="M12.2401 24.0008C15.4766 24.0008 18.2059 22.9382 20.1945 21.1039L16.3275 18.1055C15.2517 18.8375 13.8627 19.252 12.2445 19.252C9.11388 19.252 6.45946 17.1399 5.50705 14.3003H1.5166V17.3912C3.55371 21.4434 7.7029 24.0008 12.2401 24.0008Z" fill="#34A853"/>
+                        <path d="M5.50253 14.3003C5.00236 12.8099 5.00236 11.1961 5.50253 9.70575V6.61481H1.51649C-0.18551 10.0056 -0.18551 14.0004 1.51649 17.3912L5.50253 14.3003Z" fill="#FBBC05"/>
+                        <path d="M12.2401 4.74966C13.9509 4.7232 15.6044 5.36697 16.8434 6.54867L20.2695 3.12262C18.1001 1.0855 15.2208 -0.034466 12.2401 0.000808666C7.7029 0.000808666 3.55371 2.55822 1.5166 6.61481L5.50264 9.70575C6.45064 6.86173 9.10947 4.74966 12.2401 4.74966Z" fill="#EA4335"/>
+                    </svg>
+                    <span>Continue with Google</span>
+                </button>
             </div>
 
-            {/* Google Button */}
-            <button
-              onClick={handleGoogleSignIn}
-              type="button"
-              className="flex w-full items-center justify-center gap-3 rounded-xl border border-zinc-200 bg-white py-3 font-bold text-zinc-700 transition-colors hover:bg-zinc-50 hover:border-zinc-300"
-            >
-              <svg className="h-5 w-5" viewBox="0 0 24 24">
-                <path
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  fill="#4285F4"
-                />
-                <path
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  fill="#34A853"
-                />
-                <path
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                  fill="#FBBC05"
-                />
-                <path
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                  fill="#EA4335"
-                />
-              </svg>
-              Google
-            </button>
-
-            {/* Register Link */}
-            <div className="mt-8 text-center">
-              <p className="text-sm text-zinc-500">
-                Don't have an account?{" "}
-                <Link href="/register" className="font-bold text-black hover:underline">
-                  Register Now
-                </Link>
-              </p>
+            <div className="mt-6 text-center">
+                <p className="text-sm text-white/60">
+                    Don't have an account? <Link href="/signup" className="text-white font-bold hover:underline decoration-2 underline-offset-4">Sign up</Link>
+                </p>
             </div>
-
           </div>
         </div>
+
+        {/* --- Agent Login Button (Outside Card) --- */}
+        <div className="mt-8 flex justify-center animate-fade-in-up">
+            <a 
+                href={AGENT_LOGIN_URL}
+                className="group flex items-center gap-3 px-5 py-3 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/10 transition-all hover:scale-105 active:scale-95"
+            >
+                <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white shadow-inner">
+                    <UserCog size={16} />
+                </div>
+                <div className="text-left">
+                    <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest leading-none mb-0.5">Are you an Agent?</p>
+                    <p className="text-sm font-bold text-white leading-none group-hover:text-indigo-200 transition-colors">Login to Agent Portal &rarr;</p>
+                </div>
+            </a>
+        </div>
+
       </div>
     </div>
   );

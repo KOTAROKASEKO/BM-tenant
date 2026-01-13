@@ -1,6 +1,6 @@
 // lib/firebase.ts
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { 
   getFirestore, 
   enableMultiTabIndexedDbPersistence, 
@@ -45,5 +45,5 @@ if (typeof window !== "undefined") {
   // Fallback for Server Side Rendering (SSR)
   dbInstance = getFirestore(app);
 }
-
+export const googleProvider = new GoogleAuthProvider();
 export const db = dbInstance;
