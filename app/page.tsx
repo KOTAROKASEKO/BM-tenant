@@ -307,7 +307,7 @@ export default function HomePage() {
                     className="group relative flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white transition-all hover:shadow-lg"
                   >
                     {/* Image */}
-                    <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100">
+                    <div className="relative aspect-4/3 overflow-hidden bg-zinc-100">
                       <img
                         src={image}
                         alt={hit.condominiumName || "Property"}

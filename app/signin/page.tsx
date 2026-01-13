@@ -11,7 +11,7 @@ import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, googleProvider, db } from '../../lib/firebase'; // Adjust path if needed
 
 // --- Configuration ---
-const AGENT_LOGIN_URL = "https://agent-site-url.com/login"; 
+const AGENT_LOGIN_URL = "https://bm-agent.vercel.app/login"; 
 
 const ROOM_IMAGES = [
   "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?q=80&w=2970&auto=format&fit=crop",
