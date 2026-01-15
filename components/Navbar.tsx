@@ -46,6 +46,13 @@ export default function Navbar() {
             <Loader2 className="h-5 w-5 animate-spin text-zinc-300" />
           ) : user ? (
             <>
+            <Link 
+                  href="/reviews" 
+                  className={`text-sm font-bold transition-colors ${isActive('/reviews') ? 'text-black' : 'text-zinc-500 hover:text-black'}`}
+                >
+                  Condo Reviews
+                  <span className="ml-1 text-[10px] bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-full">New</span>
+                </Link>
               {/* Chat Button */}
               <Link href="/chat">
                 <button 
@@ -71,6 +78,7 @@ export default function Navbar() {
                       : "border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50 hover:shadow-sm"
                   )}
                 >
+                  
                   {user.photoURL ? (
                     <img src={user.photoURL} alt="Profile" className="h-5 w-5 rounded-full object-cover" />
                   ) : (
@@ -78,7 +86,9 @@ export default function Navbar() {
                   )}
                   <span>Profile</span>
                 </button>
+
               </Link>
+              
             </>
           ) : (
             // Signed Out State

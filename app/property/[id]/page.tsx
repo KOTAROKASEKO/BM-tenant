@@ -1,14 +1,11 @@
-"use client";
-
-import { useEffect, useState } from "react";
+import { Metadata } from "next";
+import { notFound } from "next/navigation";
 import Navbar from "@/components/Navbar";
-import { MapPin, User, CheckCircle2, MessageCircle, Phone, ArrowLeft, Bus, Loader2, AlertCircle } from "lucide-react";
+import { MapPin, CheckCircle2, MessageCircle, Phone, ArrowLeft, Bus, AlertCircle } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { adminDb } from "@/lib/firebase-admin"; 
 
-// Define the shape of our data
+// --- 型定義 ---
 type AgentProfile = {
   name: string;
   verified: boolean;
@@ -27,132 +24,125 @@ type PropertyData = {
   securityDeposit: number;
   utilityDeposit: number;
   images: string[];
+  userId?: string;
   agent: AgentProfile;
 };
 
-export default function PropertyDetailPage() {
-  // Unwraps the Promise for params in Next.js 15+ (if applicable), 
-  // or works as a standard hook in older versions.
-  const params = useParams(); 
-  const propertyId = params?.id as string;
+// Next.js 15+ 対応: params を Promise として定義
+type Props = {
+  params: Promise<{ id: string }>;
+};
 
-  const [data, setData] = useState<PropertyData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+// --- データ取得関数 (Server Side) ---
+async function getPropertyData(id: string): Promise<PropertyData | null> {
+  // IDが無効な場合は早期リターン
+  if (!id) return null;
 
-  useEffect(() => {
-    if (!propertyId) return;
+  try {
+    // 1. 物件データの取得
+    const postDoc = await adminDb.collection("posts").doc(id).get();
+    
+    if (!postDoc.exists) {
+      return null;
+    }
 
-    const fetchProperty = async () => {
-      try {
-        setLoading(true);
-        // 1. Fetch Property Data
-        const docRef = doc(db, "posts", propertyId);
-        const docSnap = await getDoc(docRef);
+    const postData = postDoc.data()!;
 
-        if (!docSnap.exists()) {
-          setError("Property not found.");
-          setLoading(false);
-          return;
-        }
-
-        const postData = docSnap.data();
-
-        // 2. Fetch Agent Data (if userId exists)
-        let agentInfo: AgentProfile = {
-          name: "Unknown Agent",
-          verified: false,
-          photo: "https://ui-avatars.com/api/?name=Agent",
-        };
-
-        if (postData.userId) {
-          try {
-            const userRef = doc(db, "users_prof", postData.userId);
-            const userSnap = await getDoc(userRef);
-            if (userSnap.exists()) {
-              const userData = userSnap.data();
-              agentInfo = {
-                name: userData.displayName || "Agent",
-                verified: userData.isVerified || false,
-                photo: userData.profileImageUrl || `https://ui-avatars.com/api/?name=${userData.displayName || 'Agent'}`,
-                phoneNumber: userData.phoneNumber || ""
-              };
-            }
-          } catch (err) {
-            console.error("Error fetching agent details:", err);
-          }
-        }
-
-        // 3. Set Complete Data
-        setData({
-          id: docSnap.id,
-          condominiumName: postData.condominiumName || "Untitled Property",
-          location: postData.location || "No location provided",
-          rent: Number(postData.rent) || 0,
-          description: postData.description || "No description available.",
-          roomType: postData.roomType || "Room",
-          gender: postData.gender || "Mix",
-          securityDeposit: Number(postData.securityDeposit) || 2.5,
-          utilityDeposit: Number(postData.utilityDeposit) || 0.5,
-          images: (postData.imageUrls && postData.imageUrls.length > 0) 
-            ? postData.imageUrls 
-            : ["https://placehold.co/600x400?text=No+Image"],
-          agent: agentInfo
-        });
-
-      } catch (err) {
-        console.error("Error fetching property:", err);
-        setError("Failed to load property details.");
-      } finally {
-        setLoading(false);
-      }
+    // 2. エージェントデータの取得
+    let agentInfo: AgentProfile = {
+      name: "Unknown Agent",
+      verified: false,
+      photo: "https://ui-avatars.com/api/?name=Agent",
     };
 
-    fetchProperty();
-  }, [propertyId]);
-
-  // --- Actions ---
-  const handleWhatsApp = () => {
-    if (!data?.agent.phoneNumber) {
-      alert("No phone number available for this agent.");
-      return;
+    if (postData.userId) {
+      try {
+        const userDoc = await adminDb.collection("users_prof").doc(postData.userId).get();
+        if (userDoc.exists) {
+          const userData = userDoc.data()!;
+          agentInfo = {
+            name: userData.displayName || "Agent",
+            verified: userData.isVerified || false,
+            photo: userData.profileImageUrl || `https://ui-avatars.com/api/?name=${userData.displayName || 'Agent'}`,
+            phoneNumber: userData.phoneNumber || ""
+          };
+        }
+      } catch (err) {
+        console.error("Error fetching agent details:", err);
+      }
     }
-    const message = `Hi ${data.agent.name}, I'm interested in ${data.condominiumName}. Is it still available?`;
-    const url = `https://wa.me/${data.agent.phoneNumber}?text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
+
+    // 3. データ整形して返す
+    return {
+      id: postDoc.id,
+      condominiumName: postData.condominiumName || "Untitled Property",
+      location: postData.location || "No location provided",
+      rent: Number(postData.rent) || 0,
+      description: postData.description || "No description available.",
+      roomType: postData.roomType || "Room",
+      gender: postData.gender || "Mix",
+      securityDeposit: Number(postData.securityDeposit) || 2.5,
+      utilityDeposit: Number(postData.utilityDeposit) || 0.5,
+      images: (postData.imageUrls && postData.imageUrls.length > 0) 
+        ? postData.imageUrls 
+        : ["https://placehold.co/600x400?text=No+Image"],
+      userId: postData.userId,
+      agent: agentInfo
+    };
+  } catch (error) {
+    console.error("Server Error fetching property:", error);
+    return null;
+  }
+}
+
+// --- 動的メタデータの生成 ---
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  // ★ 重要: params を await する
+  const { id } = await params;
+  
+  const data = await getPropertyData(id);
+
+  if (!data) {
+    return {
+      title: "Property Not Found | Bilik Match",
+    };
+  }
+
+  return {
+    title: `${data.condominiumName} - ${data.roomType} Room for Rent in ${data.location} | Bilik Match`,
+    description: `Rent this ${data.gender} unit at ${data.condominiumName} for RM ${data.rent}. ${data.description.substring(0, 150)}...`,
+    openGraph: {
+      title: `${data.condominiumName} (RM ${data.rent})`,
+      description: `Find your perfect room in ${data.location}. Verified agents, zero hassle.`,
+      images: data.images[0] ? [data.images[0]] : [],
+    },
   };
+}
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-zinc-50 flex flex-col items-center justify-center text-zinc-400">
-        <Loader2 className="h-8 w-8 animate-spin mb-2" />
-        <p className="text-sm font-medium">Loading details...</p>
-      </div>
-    );
+// --- ページコンポーネント (Server Component) ---
+export default async function PropertyDetailPage({ params }: Props) {
+  // ★ 重要: params を await する
+  const { id } = await params;
+
+  if (!id) return notFound();
+
+  const data = await getPropertyData(id);
+
+  if (!data) {
+    return notFound();
   }
 
-  if (error || !data) {
-    return (
-      <div className="min-h-screen bg-zinc-50 flex flex-col items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-2xl shadow-sm border border-zinc-200 text-center max-w-md">
-          <div className="bg-red-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
-            <AlertCircle className="h-6 w-6" />
-          </div>
-          <h2 className="text-xl font-bold text-zinc-900 mb-2">Oops!</h2>
-          <p className="text-zinc-500 mb-6">{error || "Something went wrong."}</p>
-          <Link href="/" className="inline-flex items-center justify-center px-6 py-3 bg-black text-white rounded-xl font-bold hover:bg-zinc-800 transition">
-            Back to Home
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  // Calculations
+  // 計算ロジック
   const advance = data.rent;
   const security = data.rent * data.securityDeposit;
   const utility = data.rent * data.utilityDeposit;
   const total = advance + security + utility;
+
+  // WhatsAppリンクの生成
+  const waMessage = `Hi ${data.agent.name}, I'm interested in ${data.condominiumName}. Is it still available?`;
+  const waUrl = data.agent.phoneNumber 
+    ? `https://wa.me/${data.agent.phoneNumber}?text=${encodeURIComponent(waMessage)}`
+    : "#";
 
   return (
     <div className="min-h-screen bg-zinc-50 font-sans pb-24 md:pb-0">
@@ -167,12 +157,20 @@ export default function PropertyDetailPage() {
 
         {/* Gallery Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-8 h-[300px] md:h-[400px] overflow-hidden rounded-2xl shadow-sm border border-zinc-100">
-          <div className="h-full bg-zinc-200 relative group cursor-pointer">
-            <img src={data.images[0]} alt="Main" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+          <div className="h-full bg-zinc-200 relative group cursor-pointer flex items-center justify-center">
+            <img 
+              src={data.images[0]} 
+              alt={`Main view of ${data.condominiumName}`} 
+              className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105" 
+            />
           </div>
           <div className="hidden md:grid grid-rows-2 gap-2 h-full">
-            <div className="bg-zinc-200 relative overflow-hidden group cursor-pointer">
-               <img src={data.images[1] || data.images[0]} alt="Sub" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+            <div className="bg-zinc-200 relative overflow-hidden group cursor-pointer flex items-center justify-center">
+               <img 
+                 src={data.images[1] || data.images[0]} 
+                 alt={`Interior view of ${data.condominiumName}`} 
+                 className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105" 
+               />
             </div>
             <div className="bg-zinc-100 flex items-center justify-center text-zinc-500 text-sm font-bold hover:bg-zinc-200 transition-colors cursor-pointer">
               View All Photos
@@ -205,7 +203,7 @@ export default function PropertyDetailPage() {
               </div>
             </div>
 
-            {/* Commute (Placeholder) */}
+            {/* Commute */}
             <div className="bg-blue-50/50 p-6 rounded-2xl border border-blue-100 flex items-start gap-4">
                 <div className="h-10 w-10 bg-white rounded-full flex items-center justify-center border border-blue-100 text-blue-600 shadow-sm shrink-0">
                     <Bus className="h-5 w-5" />
@@ -213,7 +211,7 @@ export default function PropertyDetailPage() {
                 <div>
                     <h4 className="font-bold text-sm uppercase text-blue-900 mb-1">Commute Check</h4>
                     <p className="text-sm text-blue-700/80 leading-relaxed">
-                        Login to automatically calculate travel time from this property to your workplace.
+                        Log in to automatically calculate travel time from {data.location} to your workplace.
                     </p>
                 </div>
             </div>
@@ -281,12 +279,19 @@ export default function PropertyDetailPage() {
                     <button className="flex items-center justify-center gap-2 bg-white border border-zinc-200 py-3.5 rounded-xl font-bold hover:bg-zinc-50 hover:border-zinc-300 transition-all text-zinc-800">
                          <MessageCircle className="h-4 w-4" /> Chat
                     </button>
-                    <button 
-                        onClick={handleWhatsApp}
-                        className="flex items-center justify-center gap-2 bg-[#25D366] text-white py-3.5 rounded-xl font-bold hover:brightness-95 transition-all shadow-sm"
+                    <a 
+                        href={waUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold transition-all shadow-sm ${
+                          data.agent.phoneNumber 
+                            ? "bg-[#25D366] text-white hover:brightness-95" 
+                            : "bg-zinc-300 text-zinc-500 cursor-not-allowed"
+                        }`}
+                        aria-disabled={!data.agent.phoneNumber}
                     >
                          <Phone className="h-4 w-4" /> WhatsApp
-                    </button>
+                    </a>
                 </div>
 
             </div>
@@ -300,12 +305,18 @@ export default function PropertyDetailPage() {
             <button className="flex-1 flex items-center justify-center gap-2 bg-zinc-100 text-zinc-900 py-3.5 rounded-xl font-bold active:scale-95 transition-transform">
                  <MessageCircle className="h-5 w-5" /> Chat
             </button>
-            <button 
-                onClick={handleWhatsApp}
-                className="flex-1 flex items-center justify-center gap-2 bg-[#25D366] text-white py-3.5 rounded-xl font-bold shadow-sm active:scale-95 transition-transform"
+            <a 
+                href={waUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold shadow-sm active:scale-95 transition-transform ${
+                    data.agent.phoneNumber 
+                      ? "bg-[#25D366] text-white" 
+                      : "bg-zinc-300 text-zinc-500 cursor-not-allowed"
+                  }`}
             >
                  <Phone className="h-5 w-5" /> WhatsApp
-            </button>
+            </a>
         </div>
       </div>
     </div>
