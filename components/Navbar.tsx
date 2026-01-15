@@ -44,60 +44,64 @@ export default function Navbar() {
         <div className="flex items-center gap-3">
           {loading ? (
             <Loader2 className="h-5 w-5 animate-spin text-zinc-300" />
-          ) : user ? (
-            <>
-            <Link 
-                  href="/reviews" 
-                  className={`text-sm font-bold transition-colors ${isActive('/reviews') ? 'text-black' : 'text-zinc-500 hover:text-black'}`}
-                >
-                  Condo Reviews
-                  <span className="ml-1 text-[10px] bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-full">New</span>
-                </Link>
-              {/* Chat Button */}
-              <Link href="/chat">
-                <button 
-                  className={clsx(
-                    "flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-all",
-                    isActive("/chat")
-                      ? "border-black bg-black text-white" 
-                      : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
-                  )}
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  <span className="hidden sm:inline">Chat</span>
-                </button>
-              </Link>
-
-              {/* Profile Button */}
-              <Link href="/profile">
-                <button 
-                  className={clsx(
-                    "flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-all",
-                    isActive("/profile")
-                      ? "border-black bg-zinc-100 text-black shadow-inner"
-                      : "border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50 hover:shadow-sm"
-                  )}
-                >
-                  
-                  {user.photoURL ? (
-                    <img src={user.photoURL} alt="Profile" className="h-5 w-5 rounded-full object-cover" />
-                  ) : (
-                    <User className="h-4 w-4" />
-                  )}
-                  <span>Profile</span>
-                </button>
-
-              </Link>
-              
-            </>
           ) : (
-            // Signed Out State
-            <Link href="/signin">
-              <button className="flex items-center gap-2 rounded-full border border-zinc-200 bg-black px-5 py-2 text-sm font-bold text-white transition-all hover:bg-zinc-800 hover:shadow-md">
-                <User className="h-4 w-4" />
-                <span>Sign In</span>
-              </button>
-            </Link>
+            <>
+              {/* Condo Reviews Button - Always visible */}
+              <Link 
+                href="/reviews" 
+                className={`text-sm font-bold transition-colors ${isActive('/reviews') ? 'text-black' : 'text-zinc-500 hover:text-black'}`}
+              >
+                Condo Reviews
+                <span className="ml-1 text-[10px] bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-full">New</span>
+              </Link>
+
+              {user ? (
+                <>
+                  {/* Chat Button */}
+                  <Link href="/chat">
+                    <button 
+                      className={clsx(
+                        "flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-all",
+                        isActive("/chat")
+                          ? "border-black bg-black text-white" 
+                          : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
+                      )}
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                      <span className="hidden sm:inline">Chat</span>
+                    </button>
+                  </Link>
+
+                  {/* Profile Button */}
+                  <Link href="/profile">
+                    <button 
+                      className={clsx(
+                        "flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-all",
+                        isActive("/profile")
+                          ? "border-black bg-zinc-100 text-black shadow-inner"
+                          : "border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50 hover:shadow-sm"
+                      )}
+                    >
+                      
+                      {user.photoURL ? (
+                        <img src={user.photoURL} alt="Profile" className="h-5 w-5 rounded-full object-cover" />
+                      ) : (
+                        <User className="h-4 w-4" />
+                      )}
+                      <span>Profile</span>
+                    </button>
+                  </Link>
+                </>
+              ) : (
+                // Signed Out State
+                <Link href="/signin">
+                  <button className="flex items-center gap-2 rounded-full border border-zinc-200 bg-black px-5 py-2 text-sm font-bold text-white transition-all hover:bg-zinc-800 hover:shadow-md">
+                    <User className="h-4 w-4" />
+                    <span>Sign In</span>
+                  </button>
+                </Link>
+              )}
+            </>
           )}
         </div>
       </div>
