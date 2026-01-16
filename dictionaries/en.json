@@ -1,0 +1,32 @@
+{
+  "nav": {
+    "reviews": "Condo Reviews",
+    "chat": "Chat",
+    "profile": "Profile",
+    "signin": "Sign In",
+    "new_badge": "New",
+    "discover": "Discover"
+  },
+  "landing": {
+    "badge": "No.1 Room Hunting Platform for Japanese Students",
+    "hero_title_line1": "Find Your Ideal",
+    "hero_title_highlight": "Perfect",
+    "hero_title_line2": "Room in Malaysia",
+    "hero_description": "Search for safe and well-managed condominiums and shared houses for Japanese students and expatriates in Kuala Lumpur (KL).<br />Find your ideal living space quickly with real reviews and AI chat.",
+    "search_placeholder": "Search by area, university, or station (e.g., Sunway, KLCC)",
+    "search_button": "Search",
+    "popular_keywords": "Popular keywords:",
+    "feature1_title": "Property Information Specialized for Students",
+    "feature1_description": "We feature many \"student dormitories\" and \"shared houses\" near universities. We carefully select properties with Wi-Fi and furniture so you can start living in Malaysia immediately.",
+    "feature2_title": "Visualize Safety and Management Quality",
+    "feature2_description": "\"Is the management office reliable?\" \"Is security adequate?\" We analyze real information that cannot be understood from photos alone, based on reviews from actual residents.",
+    "feature3_title": "Direct Chat with Agents",
+    "feature3_description": "If you find a property you're interested in, contact registered agents immediately in Japanese (or English). We provide smooth support from viewing appointments to contracts.",
+    "footer_title": "Popular Areas",
+    "footer_link1": "Bangsar Rooms",
+    "footer_link2": "Subang Jaya Student Housing",
+    "footer_link3": "Bukit Bintang Condo",
+    "footer_link4": "Cyberjaya Rentals",
+    "footer_copyright": "© 2026 Bilik Match. Helping students find their home in Malaysia."
+  }
+}

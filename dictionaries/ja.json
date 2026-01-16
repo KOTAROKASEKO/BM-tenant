@@ -1,0 +1,32 @@
+{
+  "nav": {
+    "reviews": "コンドミニアムレビュー",
+    "chat": "チャット",
+    "profile": "プロフィール",
+    "signin": "ログイン",
+    "new_badge": "新着",
+    "discover": "発見"
+  },
+  "landing": {
+    "badge": "日本人学生向け No.1 部屋探しプラットフォーム",
+    "hero_title_line1": "マレーシア留学の",
+    "hero_title_highlight": "「失敗しない」",
+    "hero_title_line2": "部屋探し。",
+    "hero_description": "クアラルンプール（KL）を中心とした、日本人学生・駐在員のための安心コンドミニアム検索。<br />リアルな口コミとAIチャットで、あなたの理想の生活拠点がすぐに見つかります。",
+    "search_placeholder": "エリア、大学名、駅名で検索 (例: Sunway, KLCC)",
+    "search_button": "検索",
+    "popular_keywords": "人気ワード:",
+    "feature1_title": "留学生に特化した物件情報",
+    "feature1_description": "大学近くの「学生寮」や「シェアハウス」を多数掲載。Wi-Fi完備、家具付きなど、マレーシア留学ですぐに生活を始められる物件を厳選しています。",
+    "feature2_title": "治安と管理品質を可視化",
+    "feature2_description": "「管理オフィスはしっかりしているか」「セキュリティは万全か」。写真だけでは分からないリアルな情報を、実際の居住者の口コミから分析しています。",
+    "feature3_title": "エージェントと直接チャット",
+    "feature3_description": "気になった物件があれば、登録エージェントに日本語（または英語）で即座に問い合わせ。内見予約から契約までスムーズにサポートします。",
+    "footer_title": "人気エリア",
+    "footer_link1": "バンサール ルーム",
+    "footer_link2": "スバン・ジャヤ 学生向け住宅",
+    "footer_link3": "ブキット・ビンタン コンドミニアム",
+    "footer_link4": "サイバージャヤ 賃貸",
+    "footer_copyright": "© 2026 Bilik Match. マレーシアで学生の家探しをサポート。"
+  }
+}

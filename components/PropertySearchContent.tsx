@@ -1,21 +1,21 @@
-// app/page.tsx
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Navbar from "@/components/Navbar"; // [!code ++]
+import Navbar from "@/components/Navbar";
 import { Filter, Search, MapPin, Loader2, Sparkles, UserPlus, MessageCircle } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams, useParams } from "next/navigation";
 import { liteClient as algoliasearch } from "algoliasearch/lite";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 
-// 1. Initialize Client
+// --- 1. Initialize Client ---
 const searchClient = algoliasearch(
   "86BOLZBS9Q",
   "5da01cabd95ead996a8c0002b09c4b63"
 );
 
-// 2. Google Maps API Setup
+// --- 2. Google Maps API Setup ---
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
 const getLatLng = async (address: string): Promise<{ lat: number; lng: number } | null> => {
@@ -36,7 +36,7 @@ const getLatLng = async (address: string): Promise<{ lat: number; lng: number } 
   return null;
 };
 
-// 3. Define Data Shape
+// --- 3. Define Data Shape ---
 type AlgoliaHit = {
   objectID: string;
   condominiumName?: string;
@@ -48,7 +48,13 @@ type AlgoliaHit = {
   _geoloc?: { lat: number; lng: number };
 };
 
-export default function HomePage() {
+// --- 4. Search Logic Component ---
+export default function PropertySearchContent({ dict }: { dict: any }) {
+  const params = useParams();
+  const lang = params?.lang as string || "en";
+  const searchParams = useSearchParams();
+  const initialQuery = searchParams.get("q") || "";
+
   const [hits, setHits] = useState<AlgoliaHit[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -56,7 +62,9 @@ export default function HomePage() {
   const [user, setUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
-  const [searchQuery, setSearchQuery] = useState("");
+  // Search State
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
+  
   const [filters, setFilters] = useState({
     minRent: "",
     maxRent: "",
@@ -73,7 +81,7 @@ export default function HomePage() {
     return () => unsubscribe();
   }, []);
 
-  // 4. Search Logic
+  // Search Execution Logic
   const performSearch = useCallback(async () => {
     setLoading(true);
 
@@ -109,7 +117,7 @@ export default function HomePage() {
 
       const filterString = filterConditions.join(" AND ");
 
-      const searchParams: any = {
+      const searchParamsAlgolia: any = {
         indexName: "bilik_match_index",
         query: finalQueryText,
         hitsPerPage: 20,
@@ -117,12 +125,12 @@ export default function HomePage() {
       };
 
       if (useGeoSearch) {
-        searchParams.aroundLatLng = targetLatLng;
-        searchParams.aroundRadius = targetRadius;
+        searchParamsAlgolia.aroundLatLng = targetLatLng;
+        searchParamsAlgolia.aroundRadius = targetRadius;
       }
 
       const response = await searchClient.search({
-        requests: [searchParams],
+        requests: [searchParamsAlgolia],
       });
 
       if (response.results && response.results[0]) {
@@ -142,7 +150,7 @@ export default function HomePage() {
       performSearch();
     }, 500); 
     return () => clearTimeout(timeoutId);
-  }, [performSearch]);
+  }, [performSearch, searchQuery, filters]);
 
   const handleFilterChange = (key: keyof typeof filters, value: string) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -151,8 +159,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 font-sans pb-20 lg:pb-0">
       
-      {/* Updated to use the Component */}
-      <Navbar />
+      <Navbar dict={dict} />
 
       <main className="mx-auto flex max-w-7xl gap-8 px-4 py-8">
         
@@ -171,7 +178,7 @@ export default function HomePage() {
             </button>
           </div>
 
-          <Link href="/ai-chat" className="group flex w-full items-center justify-center gap-2 rounded-lg bg-black px-4 py-3 text-sm font-bold text-white transition-all hover:bg-zinc-800">
+          <Link href={`/${lang}/ai-chat`} className="group flex w-full items-center justify-center gap-2 rounded-lg bg-black px-4 py-3 text-sm font-bold text-white transition-all hover:bg-zinc-800">
              <Sparkles className="h-4 w-4 text-purple-400" /> Ask AI Assistant
           </Link>
 
@@ -263,7 +270,7 @@ export default function HomePage() {
                         </p>
                     </div>
                     <Link 
-                        href="/signup" 
+                        href={`/${lang}/signup`} 
                         className="shrink-0 whitespace-nowrap rounded-2xl bg-white px-8 py-4 text-sm font-bold text-black shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center gap-2 group-hover:shadow-white/20"
                     >
                         <UserPlus className="h-4 w-4" />
@@ -302,12 +309,12 @@ export default function HomePage() {
 
                 return (
                   <Link
-                    href={`/property/${hit.objectID}`} 
+                    href={`/${lang}/property/${hit.objectID}`} 
                     key={hit.objectID}
                     className="group relative flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white transition-all hover:shadow-lg"
                   >
                     {/* Image */}
-                    <div className="relative aspect-4/3 overflow-hidden bg-zinc-100">
+                    <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100">
                       <img
                         src={image}
                         alt={hit.condominiumName || "Property"}

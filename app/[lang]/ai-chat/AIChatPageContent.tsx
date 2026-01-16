@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import Navbar from "@/components/Navbar";
-import enDict from "../../dictionaries/en.json";
 import { 
   Send, Plus, MessageSquare, Trash2, 
   Menu, X, MapPin, Loader2, Sparkles, AlertTriangle 
@@ -13,10 +12,21 @@ import {
   getDoc, updateDoc, increment, Timestamp 
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth, db } from "@/lib/firebase"; // Adjust path to your firebase config
+import { auth, db } from "@/lib/firebase";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+
+type Dictionary = {
+  nav: {
+    reviews: string;
+    chat: string;
+    profile: string;
+    signin: string;
+    new_badge: string;
+    discover?: string;
+  };
+};
 
 // --- Types ---
 
@@ -49,10 +59,7 @@ type Property = {
 // --- Constants ---
 const MAX_DAILY_MESSAGES = 5;
 
-export default function AIChatPage() {
-  // Hydration guard
-  const [mounted, setMounted] = useState(false);
-  
+export default function AIChatPageContent({ dict }: { dict: Dictionary }) {
   // Auth State
   const [user, setUser] = useState<any>(null);
   
@@ -70,11 +77,6 @@ export default function AIChatPage() {
   const [sending, setSending] = useState(false);
   
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  // Ensure component only renders after hydration
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // 1. Auth Listener
   useEffect(() => {
@@ -302,21 +304,9 @@ export default function AIChatPage() {
     </button>
   );
 
-  // Prevent hydration mismatch by not rendering until mounted
-  if (!mounted) {
-    return (
-      <div className="flex h-screen flex-col bg-zinc-50 font-sans">
-        <Navbar dict={enDict} />
-        <div className="flex items-center justify-center flex-1">
-          <Loader2 className="h-8 w-8 animate-spin text-zinc-300" />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex h-screen flex-col bg-zinc-50 font-sans">
-      <Navbar dict={enDict} />
+      <Navbar dict={dict} />
 
       <div className="mx-auto flex w-full max-w-7xl flex-1 overflow-hidden border-t border-zinc-200 bg-white shadow-sm lg:my-6 lg:rounded-2xl lg:border">
         

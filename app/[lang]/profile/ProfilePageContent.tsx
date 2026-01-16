@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
-import enDict from "../../dictionaries/en.json";
 import { 
   User, Briefcase, Calendar, Wallet, 
   LogOut, Edit2, Loader2, X, Camera, Plus, 
@@ -14,8 +13,18 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import Link from "next/link";
 import React from "react";
 
+type Dictionary = {
+  nav: {
+    reviews: string;
+    chat: string;
+    profile: string;
+    signin: string;
+    new_badge: string;
+    discover?: string;
+  };
+};
+
 // --- Type Definition ---
-// 変更点: hobbies, location (Work Location) を削除
 type UserProfile = {
   uid?: string;
   displayName: string;
@@ -25,7 +34,6 @@ type UserProfile = {
   gender: string;
   nationality: string;
   occupation: string;
-  // location: string; // 削除: 不要
   selfIntroduction: string;
   moveinDate?: any;
   budget: number;
@@ -33,7 +41,6 @@ type UserProfile = {
   propertyType: string;
   pax: number;
   pets: string;
-  // hobbies: string[]; // 削除: 不要
   preferredAreas: string[];
   _geoloc?: Array<{ lat: number; lng: number }>;
 };
@@ -55,7 +62,7 @@ const getLatLng = async (address: string): Promise<{ lat: number; lng: number } 
   return null;
 };
 
-export default function ProfilePage() {
+export default function ProfilePageContent({ dict }: { dict: Dictionary }) {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -80,7 +87,6 @@ export default function ProfilePage() {
         if (snap.exists()) {
           setProfile(snap.data() as UserProfile);
         } else {
-          // 変更点: 不要なフィールドを削除し、予算の初期値を0に設定
           setProfile({
             displayName: currentUser.displayName || "",
             email: currentUser.email || "",
@@ -89,18 +95,15 @@ export default function ProfilePage() {
             gender: "Not specified",
             nationality: "Not specified",
             occupation: "Not specified",
-            // location: "Not specified", // 削除
             selfIntroduction: "",
-            budget: 0, // 初期値を0にして入力を促す
-            moveinDate: null, // 明示的にnull
+            budget: 0,
+            moveinDate: null,
             roomType: "Middle",
             propertyType: "Condominium",
             pax: 1,
             pets: "No",
-            // hobbies: [], // 削除
             preferredAreas: [],
           });
-          // 新規ユーザーの場合は自動的に編集モードにする（オプション）
           setIsEditing(true);
         }
       } catch (err) {
@@ -119,7 +122,6 @@ export default function ProfilePage() {
 
   // --- SAVE HANDLER ---
   const handleSave = async (e: React.FormEvent, editedProfile: UserProfile, file?: File | null) => {
-    // バリデーションは EditModal 内で行い、ここには有効なデータのみが来る想定ですが、念のため
     if (!user) return;
     setSaving(true);
     
@@ -132,8 +134,6 @@ export default function ProfilePage() {
 
       const geolocList: Array<{ lat: number; lng: number }> = [];
       
-      // 変更点: Work Locationのジオコーディング処理を削除
-
       // Preferred Areasのジオコーディング
       for (const area of editedProfile.preferredAreas) {
          const loc = await getLatLng(area);
@@ -163,7 +163,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 font-sans pb-24">
-      <Navbar dict={enDict} />
+      <Navbar dict={dict} />
 
       <main className="mx-auto max-w-3xl px-4 py-8 space-y-6">
         
@@ -211,7 +211,6 @@ export default function ProfilePage() {
                 <InfoRow icon={<User />} label="Age / Gender" value={`${profile?.age} y/o, ${profile?.gender}`} />
                 <InfoRow icon={<Flag />} label="Nationality" value={profile?.nationality} />
                 <InfoRow icon={<Briefcase />} label="Occupation" value={profile?.occupation} />
-                {/* 変更点: Work Location の表示を削除 */}
                 
                 <div className="pt-2">
                     <div className="flex items-center gap-2 mb-2">
@@ -220,7 +219,6 @@ export default function ProfilePage() {
                     </div>
                     <p className="text-sm leading-relaxed text-zinc-800 pl-6 border-l-2 border-zinc-200 font-medium">{profile?.selfIntroduction || "No introduction yet."}</p>
                 </div>
-                {/* 変更点: Hobbies の表示を削除 */}
             </div>
         </div>
 
@@ -318,7 +316,7 @@ function EditModal({ initialProfile, onClose, onSave, saving }: {
     const [formData, setFormData] = useState<UserProfile>(initialProfile);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string>(initialProfile.profileImageUrl);
-    const [errorMsg, setErrorMsg] = useState(""); // エラーメッセージ用
+    const [errorMsg, setErrorMsg] = useState("");
     
     // List inputs
     const [areaInput, setAreaInput] = useState("");
@@ -392,7 +390,6 @@ function EditModal({ initialProfile, onClose, onSave, saving }: {
           <div className="flex h-full max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4 bg-white z-10">
               <h2 className="font-bold text-lg text-zinc-900">Edit Profile</h2>
-              {/* 閉じるボタンもフォームが無効な場合は押させないようにするか、あるいはそのまま閉じるのを許可するか。通常は閉じるのは許可。 */}
               <button onClick={onClose} className="rounded-full p-1 hover:bg-zinc-100 text-zinc-500"><X className="h-5 w-5" /></button>
             </div>
             
@@ -443,7 +440,6 @@ function EditModal({ initialProfile, onClose, onSave, saving }: {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                      <InputGroup label="Occupation" value={formData.occupation} onChange={(v) => setFormData({...formData, occupation: v})} />
-                     {/* 変更点: Work Location 入力削除 */}
                   </div>
                   
                   <div>
@@ -456,8 +452,6 @@ function EditModal({ initialProfile, onClose, onSave, saving }: {
                         className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-500 outline-none focus:border-black transition-colors"
                     ></textarea>
                   </div>
-
-                  {/* 変更点: Hobbies 入力セクション削除 */}
               </div>
 
               {/* Preferences Section */}

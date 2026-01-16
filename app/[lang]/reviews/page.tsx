@@ -2,6 +2,7 @@ import Navbar from "@/components/Navbar";
 import Link from "next/link";
 import { Search, MapPin, Sparkles, ShieldCheck, Star } from "lucide-react";
 import { adminDb } from "@/lib/firebase-admin";
+import { getDictionary } from "@/lib/get-dictionary";
 
 export const metadata = {
   title: "Condo Reviews | Bilik Match",
@@ -46,12 +47,18 @@ async function getAllCondos(): Promise<CondoData[]> {
   }
 }
 
-export default async function ReviewsPage() {
+export default async function ReviewsPage({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}) {
+  const { lang } = await params;
   const condos = await getAllCondos();
+  const dict = await getDictionary(lang as "en" | "ja");
 
   return (
     <div className="min-h-screen bg-zinc-50 font-sans pb-24">
-      <Navbar />
+      <Navbar dict={dict} />
 
       <main className="mx-auto max-w-5xl px-4 py-8">
         
@@ -99,7 +106,7 @@ export default async function ReviewsPage() {
         {/* Condo List Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {condos.map((condo) => (
-            <Link href={`/reviews/${condo.id}`} key={condo.id} className="group block bg-white rounded-2xl border border-zinc-200 overflow-hidden hover:shadow-lg transition-all">
+            <Link href={`/${lang}/reviews/${condo.id}`} key={condo.id} className="group block bg-white rounded-2xl border border-zinc-200 overflow-hidden hover:shadow-lg transition-all">
               <div className="flex h-44">
                 {/* Image */}
                 <div className="w-1/3 bg-zinc-200 relative">

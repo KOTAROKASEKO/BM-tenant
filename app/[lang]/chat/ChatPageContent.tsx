@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef } from "react";
 import Navbar from "@/components/Navbar";
-import enDict from "../../dictionaries/en.json";
 import { 
   Search, Send, MoreVertical, ArrowLeft, 
   Image as ImageIcon, Loader2, WifiOff, MapPin 
@@ -15,6 +14,17 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import moment from "moment";
 import Link from "next/link"; 
+
+type Dictionary = {
+  nav: {
+    reviews: string;
+    chat: string;
+    profile: string;
+    signin: string;
+    new_badge: string;
+    discover?: string;
+  };
+};
 
 type Thread = {
   id: string;
@@ -35,7 +45,7 @@ type Message = {
   remoteUrl?: string; 
 };
 
-export default function ChatPage() {
+export default function ChatPageContent({ dict }: { dict: Dictionary }) {
   const [user, setUser] = useState<any>(null);
   const [threads, setThreads] = useState<Thread[]>([]);
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
@@ -212,7 +222,7 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-screen flex-col bg-zinc-50 font-sans">
-      <Navbar dict={enDict} />
+      <Navbar dict={dict} />
 
       <div className="mx-auto flex w-full max-w-6xl flex-1 overflow-hidden border-zinc-200 bg-white shadow-sm md:my-6 md:rounded-2xl md:border">
         

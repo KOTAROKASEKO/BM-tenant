@@ -1,9 +1,10 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Navbar from "@/components/Navbar";
-import { MapPin, CheckCircle2, MessageCircle, Phone, ArrowLeft, Bus, AlertCircle } from "lucide-react";
+import { MapPin, CheckCircle2, MessageCircle, Phone, ArrowLeft, Bus, AlertCircle, Star, ChevronRight } from "lucide-react";
 import Link from "next/link";
-import { adminDb } from "@/lib/firebase-admin"; 
+import { adminDb } from "@/lib/firebase-admin";
+import { getDictionary } from "@/lib/get-dictionary"; 
 
 // --- 型定義 ---
 type AgentProfile = {
@@ -28,27 +29,67 @@ type PropertyData = {
   agent: AgentProfile;
 };
 
-// Next.js 15+ 対応: params を Promise として定義
 type Props = {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string; lang: string }>;
 };
+
+// --- コンドミニアムID検索関数 ---
+// app/property/[id]/page.tsx
+
+async function findCondoIdByName(condominiumName: string): Promise<{ id: string, rating: number } | null> {
+  if (!condominiumName) return null;
+  
+  try {
+    // 1. 【既存】名前での完全一致検索 (例: "M Vertica" == "M Vertica")
+    let snapshot = await adminDb
+      .collection("condominiums")
+      .where("name", "==", condominiumName)
+      .limit(1)
+      .get();
+    
+    if (!snapshot.empty) {
+      const data = snapshot.docs[0].data();
+      return { id: snapshot.docs[0].id, rating: data?.rating?.overall || 0 };
+    }
+
+    // 2. 【既存】ID（スラッグ）での検索 (例: "M Vertica" -> "m-vertica")
+    // Agentがスペースを入れて入力した場合、ハイフンつなぎのIDを探しに行く
+    const kebabId = condominiumName.toLowerCase().trim().replace(/\s+/g, '-');
+    let docRef = await adminDb.collection("condominiums").doc(kebabId).get();
+    
+    if (docRef.exists) {
+        const data = docRef.data();
+        return { id: docRef.id, rating: data?.rating?.overall || 0 };
+    }
+
+    // 3. ★【追加】スペース無しIDでの検索 (例: "M Vertica" -> "mvertica")
+    // Agentがスペースを入れて入力したが、DB側が "mvertica" というIDで作られている場合に対応
+    const noSpaceId = condominiumName.toLowerCase().replace(/\s+/g, '');
+    docRef = await adminDb.collection("condominiums").doc(noSpaceId).get();
+
+    if (docRef.exists) {
+        const data = docRef.data();
+        return { id: docRef.id, rating: data?.rating?.overall || 0 };
+    }
+    
+    return null;
+  } catch (error) {
+    console.error("Error finding condo ID:", error);
+    return null;
+  }
+}
 
 // --- データ取得関数 (Server Side) ---
 async function getPropertyData(id: string): Promise<PropertyData | null> {
-  // IDが無効な場合は早期リターン
   if (!id) return null;
 
   try {
-    // 1. 物件データの取得
     const postDoc = await adminDb.collection("posts").doc(id).get();
-    
-    if (!postDoc.exists) {
-      return null;
-    }
+    if (!postDoc.exists) return null;
 
     const postData = postDoc.data()!;
 
-    // 2. エージェントデータの取得
+    // エージェント情報の取得
     let agentInfo: AgentProfile = {
       name: "Unknown Agent",
       verified: false,
@@ -72,7 +113,6 @@ async function getPropertyData(id: string): Promise<PropertyData | null> {
       }
     }
 
-    // 3. データ整形して返す
     return {
       id: postDoc.id,
       condominiumName: postData.condominiumName || "Untitled Property",
@@ -95,82 +135,59 @@ async function getPropertyData(id: string): Promise<PropertyData | null> {
   }
 }
 
-// --- 動的メタデータの生成 ---
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  // ★ 重要: params を await する
   const { id } = await params;
-  
   const data = await getPropertyData(id);
-
-  if (!data) {
-    return {
-      title: "Property Not Found | Bilik Match",
-    };
-  }
+  if (!data) return { title: "Property Not Found | Bilik Match" };
 
   return {
-    title: `${data.condominiumName} - ${data.roomType} Room for Rent in ${data.location} | Bilik Match`,
-    description: `Rent this ${data.gender} unit at ${data.condominiumName} for RM ${data.rent}. ${data.description.substring(0, 150)}...`,
+    title: `${data.condominiumName} - ${data.roomType} Room | Bilik Match`,
+    description: `Rent this ${data.gender} unit at ${data.condominiumName} for RM ${data.rent}.`,
     openGraph: {
       title: `${data.condominiumName} (RM ${data.rent})`,
-      description: `Find your perfect room in ${data.location}. Verified agents, zero hassle.`,
       images: data.images[0] ? [data.images[0]] : [],
     },
   };
 }
 
-// --- ページコンポーネント (Server Component) ---
 export default async function PropertyDetailPage({ params }: Props) {
-  // ★ 重要: params を await する
-  const { id } = await params;
-
+  const { id, lang } = await params;
   if (!id) return notFound();
 
   const data = await getPropertyData(id);
+  if (!data) return notFound();
 
-  if (!data) {
-    return notFound();
-  }
+  // ★ レビュー情報の取得
+  const condoReview = await findCondoIdByName(data.condominiumName);
+  const dict = await getDictionary(lang as "en" | "ja");
 
-  // 計算ロジック
+  // 金額計算
   const advance = data.rent;
   const security = data.rent * data.securityDeposit;
   const utility = data.rent * data.utilityDeposit;
   const total = advance + security + utility;
 
-  // WhatsAppリンクの生成
-  const waMessage = `Hi ${data.agent.name}, I'm interested in ${data.condominiumName}. Is it still available?`;
   const waUrl = data.agent.phoneNumber 
-    ? `https://wa.me/${data.agent.phoneNumber}?text=${encodeURIComponent(waMessage)}`
+    ? `https://wa.me/${data.agent.phoneNumber}?text=${encodeURIComponent(`Hi ${data.agent.name}, interested in ${data.condominiumName}`)}`
     : "#";
 
   return (
     <div className="min-h-screen bg-zinc-50 font-sans pb-24 md:pb-0">
-      <Navbar />
+      <Navbar dict={dict} />
 
       <main className="mx-auto max-w-5xl px-4 py-6">
-        {/* Breadcrumb */}
-        <Link href="/" className="mb-6 flex items-center gap-2 text-sm font-semibold text-zinc-500 hover:text-black transition-colors">
-          <ArrowLeft className="h-4 w-4" />
-          Back to Listings
+        <Link href={`/${lang}`} className="mb-6 flex items-center gap-2 text-sm font-semibold text-zinc-500 hover:text-black transition-colors">
+          <ArrowLeft className="h-4 w-4" /> Back to Listings
         </Link>
 
         {/* Gallery Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-8 h-[300px] md:h-[400px] overflow-hidden rounded-2xl shadow-sm border border-zinc-100">
           <div className="h-full bg-zinc-200 relative group cursor-pointer flex items-center justify-center">
-            <img 
-              src={data.images[0]} 
-              alt={`Main view of ${data.condominiumName}`} 
-              className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105" 
-            />
+            <img src={data.images[0]} alt="Main" className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105" />
           </div>
           <div className="hidden md:grid grid-rows-2 gap-2 h-full">
-            <div className="bg-zinc-200 relative overflow-hidden group cursor-pointer flex items-center justify-center">
-               <img 
-                 src={data.images[1] || data.images[0]} 
-                 alt={`Interior view of ${data.condominiumName}`} 
-                 className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105" 
-               />
+            <div className="bg-zinc-200 relative overflow-hidden group cursor-pointer">
+               <img src={data.images[1] || data.images[0]} alt="Interior" className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105" />
             </div>
             <div className="bg-zinc-100 flex items-center justify-center text-zinc-500 text-sm font-bold hover:bg-zinc-200 transition-colors cursor-pointer">
               View All Photos
@@ -179,19 +196,31 @@ export default async function PropertyDetailPage({ params }: Props) {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* LEFT COLUMN: Info */}
+          {/* LEFT COLUMN */}
           <div className="lg:col-span-2 space-y-6">
             
-            {/* Header */}
+            {/* Header Info */}
             <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
               <div className="flex flex-col md:flex-row justify-between items-start gap-4">
                 <div>
                     <h1 className="text-2xl md:text-3xl font-bold text-zinc-900 mb-2 leading-tight">{data.condominiumName}</h1>
-                    <p className="flex items-center gap-2 text-zinc-500 font-medium">
+                    <p className="flex items-center gap-2 text-zinc-500 font-medium mb-3">
                         <MapPin className="h-4 w-4 shrink-0" /> {data.location}
                     </p>
+                    
+                    {/* ★ ここに追加: タイトル直下のレビューリンク（目立つ位置） */}
+                    {condoReview && (
+                        <Link 
+                            href={`/${lang}/reviews/${condoReview.id}`}
+                            className="inline-flex items-center gap-2 bg-yellow-50 text-yellow-700 px-3 py-1.5 rounded-lg text-sm font-bold border border-yellow-100 hover:bg-yellow-100 transition-colors"
+                        >
+                            <Star className="h-3.5 w-3.5 fill-current" /> 
+                            <span>Condo Rating: {condoReview.rating} / 5.0</span>
+                            <ChevronRight className="h-3 w-3 opacity-50" />
+                        </Link>
+                    )}
                 </div>
-                <div className="text-left md:text-right shrink-0 bg-zinc-50 md:bg-transparent p-3 md:p-0 rounded-xl md:rounded-none w-full md:w-auto">
+                <div className="text-left md:text-right shrink-0">
                     <p className="text-3xl font-black text-black">RM {data.rent}</p>
                     <p className="text-xs text-zinc-400 uppercase tracking-wide font-bold">Per Month</p>
                 </div>
@@ -211,10 +240,37 @@ export default async function PropertyDetailPage({ params }: Props) {
                 <div>
                     <h4 className="font-bold text-sm uppercase text-blue-900 mb-1">Commute Check</h4>
                     <p className="text-sm text-blue-700/80 leading-relaxed">
-                        Log in to automatically calculate travel time from {data.location} to your workplace.
+                        Check travel time from {data.location} to your campus/office.
                     </p>
                 </div>
             </div>
+
+            {/* ★ 大きなレビュー誘導カード */}
+            {condoReview ? (
+              <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm overflow-hidden relative group">
+                <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-yellow-50 to-transparent pointer-events-none"></div>
+                <div className="relative z-10 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 bg-black text-white rounded-xl flex items-center justify-center text-xl font-black shadow-lg">
+                      {condoReview.rating}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-lg text-zinc-900">Tenant Reviews</h4>
+                      <p className="text-sm text-zinc-500">See the truth about {data.condominiumName}</p>
+                    </div>
+                  </div>
+                  <Link 
+                    href={`/reviews/${condoReview.id}`}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-black text-white rounded-xl font-bold text-sm hover:bg-zinc-800 transition-all hover:scale-105 active:scale-95 shadow-md"
+                  >
+                    Read Reviews <ChevronRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              </div>
+            ) : (
+                // レビューがない場合でも「リクエスト」等のアクションを表示するか、何も表示しない
+                null
+            )}
 
             {/* Description */}
             <div className="bg-white p-6 md:p-8 rounded-2xl border border-zinc-200 shadow-sm">
@@ -237,40 +293,22 @@ export default async function PropertyDetailPage({ params }: Props) {
                         )}
                     </div>
                 </div>
-                <button className="hidden md:flex items-center gap-2 px-5 py-2.5 border border-zinc-200 rounded-xl hover:bg-zinc-50 text-sm font-bold transition-colors">
-                    View Profile
-                </button>
             </div>
           </div>
 
-          {/* RIGHT COLUMN: Costs & Sticky Action */}
+          {/* RIGHT COLUMN */}
           <div className="lg:col-span-1">
             <div className="sticky top-24 space-y-6">
                 
                 {/* Cost Breakdown */}
                 <div className="bg-zinc-900 text-white p-6 rounded-3xl shadow-xl">
                     <h3 className="font-bold text-xs uppercase tracking-widest mb-6 text-zinc-500">Move-in Cost</h3>
-                    
                     <div className="space-y-4 text-sm">
-                        <div className="flex justify-between items-center">
-                            <span className="text-zinc-400">First Month Rent</span>
-                            <span className="font-medium">RM {advance}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-zinc-400">Security Deposit ({data.securityDeposit} mo)</span>
-                            <span className="font-medium">RM {security}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-zinc-400">Utility Deposit ({data.utilityDeposit} mo)</span>
-                            <span className="font-medium">RM {utility}</span>
-                        </div>
-                        
+                        <div className="flex justify-between items-center"><span className="text-zinc-400">First Month Rent</span><span className="font-medium">RM {advance}</span></div>
+                        <div className="flex justify-between items-center"><span className="text-zinc-400">Security Deposit</span><span className="font-medium">RM {security}</span></div>
+                        <div className="flex justify-between items-center"><span className="text-zinc-400">Utility Deposit</span><span className="font-medium">RM {utility}</span></div>
                         <div className="h-px bg-zinc-800 my-4"></div>
-                        
-                        <div className="flex justify-between items-center text-lg">
-                            <span className="font-bold text-zinc-200">Total Required</span>
-                            <span className="font-black text-white">RM {total}</span>
-                        </div>
+                        <div className="flex justify-between items-center text-lg"><span className="font-bold text-zinc-200">Total</span><span className="font-black text-white">RM {total}</span></div>
                     </div>
                 </div>
 
@@ -283,12 +321,7 @@ export default async function PropertyDetailPage({ params }: Props) {
                         href={waUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold transition-all shadow-sm ${
-                          data.agent.phoneNumber 
-                            ? "bg-[#25D366] text-white hover:brightness-95" 
-                            : "bg-zinc-300 text-zinc-500 cursor-not-allowed"
-                        }`}
-                        aria-disabled={!data.agent.phoneNumber}
+                        className={`flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold transition-all shadow-sm ${data.agent.phoneNumber ? "bg-[#25D366] text-white hover:brightness-95" : "bg-zinc-300 text-zinc-500 cursor-not-allowed"}`}
                     >
                          <Phone className="h-4 w-4" /> WhatsApp
                     </a>
@@ -309,11 +342,7 @@ export default async function PropertyDetailPage({ params }: Props) {
                 href={waUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold shadow-sm active:scale-95 transition-transform ${
-                    data.agent.phoneNumber 
-                      ? "bg-[#25D366] text-white" 
-                      : "bg-zinc-300 text-zinc-500 cursor-not-allowed"
-                  }`}
+                className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold shadow-sm active:scale-95 transition-transform ${data.agent.phoneNumber ? "bg-[#25D366] text-white" : "bg-zinc-300 text-zinc-500 cursor-not-allowed"}`}
             >
                  <Phone className="h-5 w-5" /> WhatsApp
             </a>
