@@ -1,10 +1,12 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Navbar from "@/components/Navbar";
-import { MapPin, CheckCircle2, MessageCircle, Phone, ArrowLeft, Bus, AlertCircle, Star, ChevronRight } from "lucide-react";
+import { MapPin, CheckCircle2, MessageCircle, Phone, ArrowLeft, Bus, Star, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { adminDb } from "@/lib/firebase-admin";
-import { getDictionary } from "@/lib/get-dictionary"; 
+import { getDictionary } from "@/lib/get-dictionary";
+import PropertyImageCarousel from "@/components/PropertyImageCarousel"; // ★追加
+import CommuteChecker from "@/components/CommuteChecker";
 
 // --- 型定義 ---
 type AgentProfile = {
@@ -34,13 +36,12 @@ type Props = {
 };
 
 // --- コンドミニアムID検索関数 ---
-// app/property/[id]/page.tsx
 
 async function findCondoIdByName(condominiumName: string): Promise<{ id: string, rating: number } | null> {
   if (!condominiumName) return null;
   
   try {
-    // 1. 【既存】名前での完全一致検索 (例: "M Vertica" == "M Vertica")
+    // 1. 名前での完全一致検索
     let snapshot = await adminDb
       .collection("condominiums")
       .where("name", "==", condominiumName)
@@ -52,8 +53,7 @@ async function findCondoIdByName(condominiumName: string): Promise<{ id: string,
       return { id: snapshot.docs[0].id, rating: data?.rating?.overall || 0 };
     }
 
-    // 2. 【既存】ID（スラッグ）での検索 (例: "M Vertica" -> "m-vertica")
-    // Agentがスペースを入れて入力した場合、ハイフンつなぎのIDを探しに行く
+    // 2. ID（スラッグ）での検索 (例: "M Vertica" -> "m-vertica")
     const kebabId = condominiumName.toLowerCase().trim().replace(/\s+/g, '-');
     let docRef = await adminDb.collection("condominiums").doc(kebabId).get();
     
@@ -62,8 +62,7 @@ async function findCondoIdByName(condominiumName: string): Promise<{ id: string,
         return { id: docRef.id, rating: data?.rating?.overall || 0 };
     }
 
-    // 3. ★【追加】スペース無しIDでの検索 (例: "M Vertica" -> "mvertica")
-    // Agentがスペースを入れて入力したが、DB側が "mvertica" というIDで作られている場合に対応
+    // 3. スペース無しIDでの検索 (例: "M Vertica" -> "mvertica")
     const noSpaceId = condominiumName.toLowerCase().replace(/\s+/g, '');
     docRef = await adminDb.collection("condominiums").doc(noSpaceId).get();
 
@@ -157,7 +156,7 @@ export default async function PropertyDetailPage({ params }: Props) {
   const data = await getPropertyData(id);
   if (!data) return notFound();
 
-  // ★ レビュー情報の取得
+  // レビュー情報の取得
   const condoReview = await findCondoIdByName(data.condominiumName);
   const dict = await getDictionary(lang as "en" | "ja");
 
@@ -180,20 +179,8 @@ export default async function PropertyDetailPage({ params }: Props) {
           <ArrowLeft className="h-4 w-4" /> Back to Listings
         </Link>
 
-        {/* Gallery Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-8 h-[300px] md:h-[400px] overflow-hidden rounded-2xl shadow-sm border border-zinc-100">
-          <div className="h-full bg-zinc-200 relative group cursor-pointer flex items-center justify-center">
-            <img src={data.images[0]} alt="Main" className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105" />
-          </div>
-          <div className="hidden md:grid grid-rows-2 gap-2 h-full">
-            <div className="bg-zinc-200 relative overflow-hidden group cursor-pointer">
-               <img src={data.images[1] || data.images[0]} alt="Interior" className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105" />
-            </div>
-            <div className="bg-zinc-100 flex items-center justify-center text-zinc-500 text-sm font-bold hover:bg-zinc-200 transition-colors cursor-pointer">
-              View All Photos
-            </div>
-          </div>
-        </div>
+        {/* ★変更点: 新しい画像カルーセルを使用 */}
+        <PropertyImageCarousel images={data.images} />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* LEFT COLUMN */}
@@ -208,7 +195,6 @@ export default async function PropertyDetailPage({ params }: Props) {
                         <MapPin className="h-4 w-4 shrink-0" /> {data.location}
                     </p>
                     
-                    {/* ★ ここに追加: タイトル直下のレビューリンク（目立つ位置） */}
                     {condoReview && (
                         <Link 
                             href={`/${lang}/reviews/${condoReview.id}`}
@@ -233,19 +219,11 @@ export default async function PropertyDetailPage({ params }: Props) {
             </div>
 
             {/* Commute */}
-            <div className="bg-blue-50/50 p-6 rounded-2xl border border-blue-100 flex items-start gap-4">
-                <div className="h-10 w-10 bg-white rounded-full flex items-center justify-center border border-blue-100 text-blue-600 shadow-sm shrink-0">
-                    <Bus className="h-5 w-5" />
-                </div>
-                <div>
-                    <h4 className="font-bold text-sm uppercase text-blue-900 mb-1">Commute Check</h4>
-                    <p className="text-sm text-blue-700/80 leading-relaxed">
-                        Check travel time from {data.location} to your campus/office.
-                    </p>
-                </div>
-            </div>
+            <CommuteChecker 
+              propertyId={data.id} 
+              propertyLocation={data.location} 
+            />
 
-            {/* ★ 大きなレビュー誘導カード */}
             {condoReview ? (
               <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm overflow-hidden relative group">
                 <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-yellow-50 to-transparent pointer-events-none"></div>
@@ -267,10 +245,7 @@ export default async function PropertyDetailPage({ params }: Props) {
                   </Link>
                 </div>
               </div>
-            ) : (
-                // レビューがない場合でも「リクエスト」等のアクションを表示するか、何も表示しない
-                null
-            )}
+            ) : null}
 
             {/* Description */}
             <div className="bg-white p-6 md:p-8 rounded-2xl border border-zinc-200 shadow-sm">
@@ -299,7 +274,6 @@ export default async function PropertyDetailPage({ params }: Props) {
           {/* RIGHT COLUMN */}
           <div className="lg:col-span-1">
             <div className="sticky top-24 space-y-6">
-                
                 {/* Cost Breakdown */}
                 <div className="bg-zinc-900 text-white p-6 rounded-3xl shadow-xl">
                     <h3 className="font-bold text-xs uppercase tracking-widest mb-6 text-zinc-500">Move-in Cost</h3>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import BottomNav from "@/components/BottomNav";
+import LangSetter from "@/components/LangSetter";
 import "../globals.css";
 
 const geistSans = Geist({
@@ -36,7 +37,8 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({
+export default async function LangLayout({
+  
   children,
   params,
 }: Readonly<{
@@ -46,15 +48,12 @@ export default async function RootLayout({
   const { lang } = await params;
   
   return (
-    <html lang={lang}>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
-        
-        {/* Bottom Nav (モバイル用) - 常に表示 */}
-        <BottomNav />
-      </body>
-    </html>
+    <>
+      <LangSetter />
+      {children}
+      
+      {/* Bottom Nav (モバイル用) - 常に表示 */}
+      <BottomNav />
+    </>
   );
 }

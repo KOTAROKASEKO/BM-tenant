@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     template: '%s | Bilik Match',
     default: 'Bilik Match - Find Your Ideal Room in Malaysia',
   },
-  description: "日本人向けの安心コンドミニアム探し。管理品質やリアルな口コミから、失敗しない物件選びをサポートします。",
+  description: "Find your ideal room in Malaysia. Search for safe and well-managed condominiums with real reviews.",
 };
 
 export default function RootLayout({
@@ -25,8 +25,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Default to 'en' for root layout - LangSetter will update it for [lang] routes
   return (
-    <html>
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

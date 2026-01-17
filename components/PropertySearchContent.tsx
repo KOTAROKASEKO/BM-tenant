@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Navbar from "@/components/Navbar";
-import { Filter, Search, MapPin, Loader2, Sparkles, UserPlus, MessageCircle } from "lucide-react";
+import { Filter, Search, MapPin, Loader2, Sparkles, UserPlus, MessageCircle, Navigation, Repeat } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams, useParams } from "next/navigation";
 import { liteClient as algoliasearch } from "algoliasearch/lite";
@@ -48,8 +48,19 @@ type AlgoliaHit = {
   _geoloc?: { lat: number; lng: number };
 };
 
+type Dictionary = {
+  nav: {
+    reviews: string;
+    chat: string;
+    profile: string;
+    signin: string;
+    new_badge: string;
+    discover?: string;
+  };
+};
+
 // --- 4. Search Logic Component ---
-export default function PropertySearchContent({ dict }: { dict: any }) {
+export default function PropertySearchContent({ dict }: { dict: Dictionary }) {
   const params = useParams();
   const lang = params?.lang as string || "en";
   const searchParams = useSearchParams();
@@ -72,6 +83,9 @@ export default function PropertySearchContent({ dict }: { dict: any }) {
     roomType: "any",
   });
 
+  // Banner State (0 = Mutual Matching, 1 = Simulator)
+  const [bannerIndex, setBannerIndex] = useState(0);
+
   // Auth Listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -80,6 +94,17 @@ export default function PropertySearchContent({ dict }: { dict: any }) {
     });
     return () => unsubscribe();
   }, []);
+
+  // Banner Auto-Scroll Timer
+  useEffect(() => {
+    if (user) return; // Stop timer if logged in
+    
+    const timer = setInterval(() => {
+      setBannerIndex((prev) => (prev === 0 ? 1 : 0));
+    }, 5000); // Slide every 5 seconds
+
+    return () => clearInterval(timer);
+  }, [user]);
 
   // Search Execution Logic
   const performSearch = useCallback(async () => {
@@ -252,30 +277,88 @@ export default function PropertySearchContent({ dict }: { dict: any }) {
         {/* --- MAIN CONTENT --- */}
         <div className="flex-1">
           
-          {/* Conversational Benefit Banner (Only if NOT logged in) */}
+          {/* Sliding Banner (Only if NOT logged in) */}
           {!user && !authLoading && (
-            <div className="mb-8 overflow-hidden rounded-3xl bg-black p-6 text-white shadow-xl md:p-8 relative group">
-                <div className="absolute top-0 right-0 p-32 bg-purple-600/20 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-                <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                    <div className="space-y-3 max-w-xl">
-                        <div className="flex items-center gap-2 text-purple-300 font-bold uppercase tracking-wider text-xs">
-                            <MessageCircle className="h-4 w-4" />
-                            <span>Efficiency Hack</span>
+            <div className="mb-8 w-full overflow-hidden rounded-3xl bg-black text-white shadow-xl h-[220px] md:h-[180px] relative group">
+                
+                {/* 1. Track (Moves Left/Right) */}
+                <div 
+                    className="flex h-full w-full transition-transform duration-700 ease-in-out"
+                    style={{ transform: `translateX(-${bannerIndex * 100}%)` }}
+                >
+                    
+                    {/* --- SLIDE 1: Mutual Matching --- */}
+                    <div className="relative min-w-full h-full p-6 md:p-8 flex items-center justify-between">
+                        {/* Blob */}
+                        <div className="absolute top-0 right-0 p-32 bg-purple-600/20 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+
+                        <div className="relative z-10 flex flex-col justify-center h-full max-w-xl">
+                            <div className="flex items-center gap-2 text-purple-300 font-bold uppercase tracking-wider text-xs mb-2">
+                                <Repeat className="h-4 w-4" />
+                                <span>Mutual Matching System</span>
+                            </div>
+                            <h2 className="text-2xl font-black leading-tight md:text-3xl mb-1">
+                                Stop hunting rooms. <br className="hidden md:block"/> Let agents come to <span className="text-purple-400 underline decoration-wavy decoration-purple-400/30 underline-offset-4">you</span>.
+                            </h2>
+                            <p className="text-zinc-300 text-sm md:text-base leading-relaxed hidden sm:block">
+                                Don't scroll endlessly. Create a profile and let verified agents compete to find your perfect match.
+                            </p>
                         </div>
-                        <h2 className="text-2xl font-black leading-tight md:text-3xl">
-                            Don't just search. Let agents <br className="hidden md:block"/> come to <span className="text-purple-400 underline decoration-wavy decoration-purple-400/30 underline-offset-4">you</span>.
-                        </h2>
-                        <p className="text-zinc-300 text-sm md:text-base leading-relaxed">
-                            Instead of endless scrolling, create a profile. Agents with your <b>ideal property</b> will talk to you directly. This conversational way to find a property makes room hunting 10x more efficient.
-                        </p>
                     </div>
-                    <Link 
+
+                    {/* --- SLIDE 2: Life Simulator --- */}
+                    <div className="relative min-w-full h-full p-6 md:p-8 flex items-center justify-between">
+                        {/* Blob */}
+                        <div className="absolute top-0 right-0 p-32 bg-blue-600/20 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+
+                        <div className="relative z-10 flex flex-col justify-center h-full max-w-xl">
+                            <div className="flex items-center gap-2 text-blue-300 font-bold uppercase tracking-wider text-xs mb-2">
+                                <Navigation className="h-4 w-4" />
+                                <span>"If You Live Here" Simulator</span>
+                            </div>
+                            <h2 className="text-2xl font-black leading-tight md:text-3xl mb-1">
+                                Don't just rent. <br className="hidden md:block"/> <span className="text-blue-400 underline decoration-wavy decoration-blue-400/30 underline-offset-4">Simulate your life</span>.
+                            </h2>
+                            <p className="text-zinc-300 text-sm md:text-base leading-relaxed hidden sm:block">
+                                Get highly personalized AI analysis on commute times, food spots, and deal breakers instantly.
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+
+                {/* Fixed Action Button (Overlays the slider) */}
+                <div className="absolute right-6 top-1/2 -translate-y-1/2 hidden md:block">
+                     <Link 
                         href={`/${lang}/signup`} 
-                        className="shrink-0 whitespace-nowrap rounded-2xl bg-white px-8 py-4 text-sm font-bold text-black shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center gap-2 group-hover:shadow-white/20"
+                        className="whitespace-nowrap rounded-2xl bg-white px-8 py-4 text-sm font-bold text-black shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center gap-2"
                     >
                         <UserPlus className="h-4 w-4" />
                         Create Free Profile
                     </Link>
+                </div>
+
+                {/* Mobile Button (Bottom Right) */}
+                 <div className="absolute bottom-4 right-4 md:hidden">
+                     <Link 
+                        href={`/${lang}/signup`} 
+                        className="whitespace-nowrap rounded-xl bg-white px-4 py-2 text-xs font-bold text-black shadow-lg flex items-center gap-2"
+                    >
+                        <UserPlus className="h-3 w-3" />
+                        Start Now
+                    </Link>
+                </div>
+
+                {/* Indicators */}
+                <div className="absolute bottom-4 left-6 flex gap-2">
+                    <button 
+                        onClick={() => setBannerIndex(0)}
+                        className={`h-1.5 rounded-full transition-all duration-500 ${bannerIndex === 0 ? 'w-6 bg-white' : 'w-2 bg-white/30 hover:bg-white/60'}`} 
+                    />
+                    <button 
+                        onClick={() => setBannerIndex(1)}
+                        className={`h-1.5 rounded-full transition-all duration-500 ${bannerIndex === 1 ? 'w-6 bg-white' : 'w-2 bg-white/30 hover:bg-white/60'}`} 
+                    />
                 </div>
             </div>
           )}
