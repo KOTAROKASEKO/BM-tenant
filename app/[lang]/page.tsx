@@ -8,6 +8,7 @@ import { getDictionary } from "@/lib/get-dictionary";
 // Generate metadata based on language
 1
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  
   const { lang } = await params;
   const dict = await getDictionary(lang as "en" | "ja");
   

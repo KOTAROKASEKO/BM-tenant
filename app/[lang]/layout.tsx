@@ -14,28 +14,41 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const baseUrl = 'https://bm-tenant.vercel.app';
+
 // ★ SEO対策: サイト全体のメタデータ設定
-export const metadata: Metadata = {
-  title: {
-    template: '%s | Bilik Match',
-    default: 'Bilik Match - Find Your Ideal Room in Malaysia',
-  },
-  description: "日本人向けの安心コンドミニアム探し。管理品質やリアルな口コミから、失敗しない物件選びをサポートします。",
-  openGraph: {
-    type: 'website',
-    locale: 'ja_JP',
-    url: 'https://bm-tenant.vercel.app',
-    siteName: 'Bilik Match',
-    images: [
-      {
-        url: 'https://bm-tenant.vercel.app/og-image.jpg',
-        width: 1200,
-        height: 630,
-        alt: 'Bilik Match',
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  
+  return {
+    title: {
+      template: '%s | Bilik Match',
+      default: 'Bilik Match - Find Your Ideal Room in Malaysia',
+    },
+    description: "日本人向けの安心コンドミニアム探し。管理品質やリアルな口コミから、失敗しない物件選びをサポートします。",
+    openGraph: {
+      type: 'website',
+      locale: lang === 'ja' ? 'ja_JP' : 'en_US',
+      url: `${baseUrl}/${lang}`,
+      siteName: 'Bilik Match',
+      images: [
+        {
+          url: 'https://bm-tenant.vercel.app/og-image.jpg',
+          width: 1200,
+          height: 630,
+          alt: 'Bilik Match',
+        },
+      ],
+    },
+    alternates: {
+      canonical: `${baseUrl}/${lang}`,
+      languages: {
+        'en': `${baseUrl}/en`,
+        'ja': `${baseUrl}/ja`,
       },
-    ],
-  },
-};
+    },
+  };
+}
 
 export default async function LangLayout({
   

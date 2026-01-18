@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Navbar from "@/components/Navbar";
 import { Filter, Search, MapPin, Loader2, Sparkles, UserPlus, MessageCircle, Navigation, Repeat } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useSearchParams, useParams } from "next/navigation";
 import { liteClient as algoliasearch } from "algoliasearch/lite";
 import { auth } from "@/lib/firebase";
@@ -404,10 +405,12 @@ export default function PropertySearchContent({ dict }: { dict: Dictionary }) {
                   >
                     {/* Image */}
                     <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100">
-                      <img
+                      <Image
                         src={image}
                         alt={hit.condominiumName || "Property"}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
                       />
                       <div className="absolute left-3 top-3 rounded bg-black/70 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-sm">
                         {hit.roomType || "Room"}

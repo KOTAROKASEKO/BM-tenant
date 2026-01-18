@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { 
   Search, Send, MoreVertical, ArrowLeft, 
@@ -46,15 +47,18 @@ type Message = {
 };
 
 export default function ChatPageContent({ dict }: { dict: Dictionary }) {
+  const searchParams = useSearchParams();
+  const threadIdFromUrl = searchParams.get('id');
+  
   const [user, setUser] = useState<any>(null);
   const [threads, setThreads] = useState<Thread[]>([]);
-  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(threadIdFromUrl);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(true);
   const [isOnline, setIsOnline] = useState(true);
 
-  const [showMobileChat, setShowMobileChat] = useState(false);
+  const [showMobileChat, setShowMobileChat] = useState(!!threadIdFromUrl);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // 1. Connection Status
@@ -105,6 +109,15 @@ export default function ChatPageContent({ dict }: { dict: Dictionary }) {
         }
         setThreads(threadList);
         setLoading(false);
+        
+        // If threadIdFromUrl is provided and thread exists, set it as active
+        if (threadIdFromUrl) {
+          const threadExists = threadList.some(t => t.id === threadIdFromUrl);
+          if (threadExists && activeThreadId !== threadIdFromUrl) {
+            setActiveThreadId(threadIdFromUrl);
+            setShowMobileChat(true);
+          }
+        }
       });
 
       return () => unsubThreads();
@@ -113,7 +126,18 @@ export default function ChatPageContent({ dict }: { dict: Dictionary }) {
     return () => unsubAuth();
   }, []);
 
-  // 3. Messages Listener
+  // 3. Handle threadId from URL
+  useEffect(() => {
+    if (threadIdFromUrl && user && threads.length > 0) {
+      const threadExists = threads.some(t => t.id === threadIdFromUrl);
+      if (threadExists && activeThreadId !== threadIdFromUrl) {
+        setActiveThreadId(threadIdFromUrl);
+        setShowMobileChat(true);
+      }
+    }
+  }, [threadIdFromUrl, user, threads, activeThreadId]);
+
+  // 4. Messages Listener
   useEffect(() => {
     if (!activeThreadId) return;
     const q = query(collection(db, "chats", activeThreadId, "messages"), orderBy("timestamp", "asc"));

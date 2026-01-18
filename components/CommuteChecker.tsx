@@ -6,6 +6,8 @@ import { auth, db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { Loader2, MapPin, Navigation, AlertCircle, CheckCircle2, Sparkles } from "lucide-react";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export default function CommuteChecker({ 
   propertyId, 
@@ -120,20 +122,41 @@ export default function CommuteChecker({
       {result ? (
         <div className="bg-zinc-50 rounded-xl p-5 border border-zinc-100 space-y-4 animate-in fade-in zoom-in-95">
              <div className="flex justify-between items-center border-b border-zinc-200 pb-3">
-                <span className="text-xs font-bold uppercase text-zinc-400">Score</span>
+                <span className="text-xs font-bold uppercase text-zinc-400 tracking-wider">Score</span>
                 <span className="text-2xl font-black text-zinc-900">{result.score}/100</span>
              </div>
              
-             <div>
-                <span className="text-xs font-bold text-zinc-500 block mb-1">Commute to {result.commute.destination}</span>
-                <p className="font-bold text-zinc-900 flex items-center gap-2">
-                    <Navigation className="h-4 w-4" /> {result.commute.duration} via {result.commute.mode}
+             <div className="bg-white p-4 rounded-lg border border-zinc-200">
+                <span className="text-xs font-bold text-zinc-500 block mb-2">Commute to {result.commute.destination}</span>
+                <p className="font-bold text-zinc-900 flex items-center gap-2 text-sm">
+                    <Navigation className="h-4 w-4 text-blue-600" /> {result.commute.duration} via {result.commute.mode}
                 </p>
-                <p className="text-xs text-zinc-500 mt-1">{result.commute.details}</p>
+                <p className="text-xs text-zinc-500 mt-2 leading-relaxed">{result.commute.details}</p>
              </div>
 
-             <div className="bg-white p-3 rounded-lg border border-zinc-200 text-xs text-zinc-600 italic">
-                "{result.comment}"
+             <div className="bg-white p-4 rounded-lg border border-zinc-200">
+                <h4 className="text-xs font-bold uppercase text-zinc-500 mb-3 tracking-wider">AI Analysis</h4>
+                <div className="prose prose-sm max-w-none text-zinc-700">
+                    <ReactMarkdown 
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                            p: ({node, ...props}) => <p className="mb-3 last:mb-0 leading-relaxed text-sm" {...props} />,
+                            strong: ({node, ...props}) => <strong className="font-bold text-zinc-900" {...props} />,
+                            em: ({node, ...props}) => <em className="italic text-zinc-600" {...props} />,
+                            ul: ({node, ...props}) => <ul className="list-disc list-inside mb-3 space-y-1.5 ml-2" {...props} />,
+                            ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-3 space-y-1.5 ml-2" {...props} />,
+                            li: ({node, ...props}) => <li className="text-sm leading-relaxed" {...props} />,
+                            h1: ({node, ...props}) => <h1 className="text-lg font-bold text-zinc-900 mb-2 mt-4 first:mt-0" {...props} />,
+                            h2: ({node, ...props}) => <h2 className="text-base font-bold text-zinc-900 mb-2 mt-3 first:mt-0" {...props} />,
+                            h3: ({node, ...props}) => <h3 className="text-sm font-bold text-zinc-900 mb-1 mt-2 first:mt-0" {...props} />,
+                            blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-blue-300 pl-3 py-1 my-2 italic text-zinc-600 bg-blue-50 rounded-r" {...props} />,
+                            code: ({node, ...props}) => <code className="bg-zinc-100 px-1.5 py-0.5 rounded text-xs font-mono text-zinc-800" {...props} />,
+                            hr: ({node, ...props}) => <hr className="my-4 border-zinc-200" {...props} />,
+                        }}
+                    >
+                        {result.comment}
+                    </ReactMarkdown>
+                </div>
              </div>
         </div>
       ) : (

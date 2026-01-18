@@ -60,12 +60,18 @@ export default function Navbar({ dict }: { dict: Dictionary }) {
           ) : (
             <>
               {/* Condo Reviews Button - Always visible */}
-              <Link 
-                href={`/${lang}/reviews`} 
-                className={`text-sm font-bold transition-colors ${isActive(`/${lang}/reviews`) ? 'text-black' : 'text-zinc-500 hover:text-black'}`}
-              >
-                {dict.nav.reviews}
-                <span className="ml-1 text-[10px] bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-full">{dict.nav.new_badge}</span>
+              <Link href={`/${lang}/reviews`}>
+                <button 
+                  className={clsx(
+                    "flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-all",
+                    isActive(`/${lang}/reviews`)
+                      ? "border-black bg-black text-white" 
+                      : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
+                  )}
+                >
+                  {dict.nav.reviews}
+                  <span className="text-[10px] bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-full">{dict.nav.new_badge}</span>
+                </button>
               </Link>
 
               {user ? (

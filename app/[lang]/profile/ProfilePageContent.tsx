@@ -210,14 +210,14 @@ export default function ProfilePageContent({ dict }: { dict: Dictionary }) {
             <div className="space-y-4">
                 <InfoRow icon={<User />} label="Age / Gender" value={`${profile?.age} y/o, ${profile?.gender}`} />
                 <InfoRow icon={<Flag />} label="Nationality" value={profile?.nationality} />
-                <InfoRow icon={<Briefcase />} label="Occupation" value={profile?.occupation} />
+                <InfoRow icon={<Briefcase />} label="Work Place / School Place" value={profile?.occupation} />
                 
                 <div className="pt-2">
                     <div className="flex items-center gap-2 mb-2">
                        <MessageSquare className="h-4 w-4 text-zinc-500" />
-                       <span className="text-xs font-medium text-zinc-500">About Me</span>
+                       <span className="text-xs font-medium text-zinc-500">Property Preferences</span>
                     </div>
-                    <p className="text-sm leading-relaxed text-zinc-800 pl-6 border-l-2 border-zinc-200 font-medium">{profile?.selfIntroduction || "No introduction yet."}</p>
+                    <p className="text-sm leading-relaxed text-zinc-800 pl-6 border-l-2 border-zinc-200 font-medium">{profile?.selfIntroduction || "No preferences yet."}</p>
                 </div>
             </div>
         </div>
@@ -439,18 +439,7 @@ function EditModal({ initialProfile, onClose, onSave, saving }: {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <InputGroup label="Occupation" value={formData.occupation} onChange={(v) => setFormData({...formData, occupation: v})} />
-                  </div>
-                  
-                  <div>
-                    <label className="mb-1 block text-xs font-bold text-zinc-700">Bio</label>
-                    <textarea 
-                        value={formData.selfIntroduction}
-                        onChange={(e) => setFormData({...formData, selfIntroduction: e.target.value})}
-                        rows={3}
-                        placeholder="Tell us about yourself..."
-                        className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-500 outline-none focus:border-black transition-colors"
-                    ></textarea>
+                     <InputGroup label="Work Place / School Place" value={formData.occupation} onChange={(v) => setFormData({...formData, occupation: v})} />
                   </div>
               </div>
 
@@ -526,6 +515,17 @@ function EditModal({ initialProfile, onClose, onSave, saving }: {
                             className="w-full accent-black cursor-pointer"
                         />
                      </div>
+                  </div>
+                  
+                  <div>
+                    <label className="mb-1 block text-xs font-bold text-zinc-700">Property Preferences</label>
+                    <textarea 
+                        value={formData.selfIntroduction}
+                        onChange={(e) => setFormData({...formData, selfIntroduction: e.target.value})}
+                        rows={3}
+                        placeholder="e.g. nice kitchen / nice facility / nice view"
+                        className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-500 outline-none focus:border-black transition-colors"
+                    ></textarea>
                   </div>
               </div>
 

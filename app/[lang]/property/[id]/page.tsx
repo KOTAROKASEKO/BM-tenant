@@ -7,6 +7,8 @@ import { adminDb } from "@/lib/firebase-admin";
 import { getDictionary } from "@/lib/get-dictionary";
 import PropertyImageCarousel from "@/components/PropertyImageCarousel"; // ★追加
 import CommuteChecker from "@/components/CommuteChecker";
+import ChatButton from "@/components/ChatButton";
+import DescriptionSection from "@/components/DescriptionSection";
 
 // --- 型定義 ---
 type AgentProfile = {
@@ -156,6 +158,32 @@ export default async function PropertyDetailPage({ params }: Props) {
   const data = await getPropertyData(id);
   if (!data) return notFound();
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Accommodation", // または "Apartment", "Product"
+    "name": data.condominiumName,
+    "description": data.description,
+    "image": data.images,
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Kuala Lumpur", // data.location から都市名を抽出できればベスト
+      "addressCountry": "MY",
+      "streetAddress": data.location
+    },
+    "numberOfRooms": 1, // data.roomType から推測
+    "floorSize": {
+      "@type": "QuantitativeValue",
+      "value": 0, // 広さデータがあれば入れる
+      "unitCode": "FOT" // Square Feet
+    },
+    "offers": {
+      "@type": "Offer",
+      "priceCurrency": "MYR",
+      "price": data.rent,
+      "availability": "https://schema.org/InStock"
+    }
+  };
+
   // レビュー情報の取得
   const condoReview = await findCondoIdByName(data.condominiumName);
   const dict = await getDictionary(lang as "en" | "ja");
@@ -172,6 +200,10 @@ export default async function PropertyDetailPage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-zinc-50 font-sans pb-24 md:pb-0">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Navbar dict={dict} />
 
       <main className="mx-auto max-w-5xl px-4 py-6">
@@ -248,12 +280,7 @@ export default async function PropertyDetailPage({ params }: Props) {
             ) : null}
 
             {/* Description */}
-            <div className="bg-white p-6 md:p-8 rounded-2xl border border-zinc-200 shadow-sm">
-                <h3 className="font-bold text-lg mb-4 text-zinc-900">About this property</h3>
-                <p className="whitespace-pre-line text-zinc-600 leading-relaxed text-sm md:text-base">
-                    {data.description}
-                </p>
-            </div>
+            <DescriptionSection description={data.description} />
 
              {/* Agent Info */}
              <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm flex items-center justify-between">
@@ -288,9 +315,14 @@ export default async function PropertyDetailPage({ params }: Props) {
 
                 {/* Desktop Actions */}
                 <div className="hidden lg:grid grid-cols-2 gap-3">
-                    <button className="flex items-center justify-center gap-2 bg-white border border-zinc-200 py-3.5 rounded-xl font-bold hover:bg-zinc-50 hover:border-zinc-300 transition-all text-zinc-800">
-                         <MessageCircle className="h-4 w-4" /> Chat
-                    </button>
+                    {data.userId && (
+                        <ChatButton
+                            agentUserId={data.userId}
+                            lang={lang}
+                            className="flex items-center justify-center gap-2 bg-white border border-zinc-200 py-3.5 rounded-xl font-bold hover:bg-zinc-50 hover:border-zinc-300 transition-all text-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                            variant="desktop"
+                        />
+                    )}
                     <a 
                         href={waUrl}
                         target="_blank"
@@ -309,9 +341,14 @@ export default async function PropertyDetailPage({ params }: Props) {
       {/* Mobile Fixed Action Bar */}
       <div className="fixed bottom-0 left-0 w-full bg-white border-t border-zinc-200 p-4 lg:hidden z-50 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <div className="flex gap-3">
-            <button className="flex-1 flex items-center justify-center gap-2 bg-zinc-100 text-zinc-900 py-3.5 rounded-xl font-bold active:scale-95 transition-transform">
-                 <MessageCircle className="h-5 w-5" /> Chat
-            </button>
+            {data.userId && (
+                <ChatButton
+                    agentUserId={data.userId}
+                    lang={lang}
+                    className="flex-1 flex items-center justify-center gap-2 bg-zinc-100 text-zinc-900 py-3.5 rounded-xl font-bold active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
+                    variant="mobile"
+                />
+            )}
             <a 
                 href={waUrl}
                 target="_blank"
