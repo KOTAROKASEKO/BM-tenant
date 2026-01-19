@@ -1,39 +1,77 @@
-// app/sitemap.ts
 export const dynamic = 'force-dynamic';
 import { MetadataRoute } from 'next';
-import { adminDb } from '../lib/firebase-admin'; // pathは環境に合わせて調整
+import { adminDb } from '../lib/firebase-admin';
 
-const BASE_URL = 'https://bm-tenant.vercel.app';
+// ★重要修正: ここを実際の運用ドメインに変更
+const BASE_URL = 'https://bilikmatch.com';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // 1. 静的ページ (Reviews一覧を追加)
-  const staticRoutes = [
-    { url: `${BASE_URL}`, lastModified: new Date(), changeFrequency: 'daily' as const, priority: 1 },
-    { url: `${BASE_URL}/reviews`, lastModified: new Date(), changeFrequency: 'daily' as const, priority: 0.9 }, // ★追加
-  ];
+  const languages = ['en', 'ja']; 
+  let routes: MetadataRoute.Sitemap = [];
 
-  // 2. 物件詳細 (Existing Posts)
-  const postsSnapshot = await adminDb.collection('posts')
-    .where('status', '==', 'open')
-    .orderBy('timestamp', 'desc')
-    .get();
+  try {
+    // 1. 静的ページ (各言語分)
+    for (const lang of languages) {
+      routes.push({
+        url: `${BASE_URL}/${lang}`,
+        lastModified: new Date(),
+        changeFrequency: 'daily',
+        priority: 1,
+      });
+      routes.push({
+        url: `${BASE_URL}/${lang}/reviews`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly',
+        priority: 0.9,
+      });
+    }
 
-  const postRoutes = postsSnapshot.docs.map((doc) => ({
-    url: `${BASE_URL}/property/${doc.id}`,
-    lastModified: doc.data().timestamp?.toDate() || new Date(),
-    changeFrequency: 'weekly' as const,
-    priority: 0.8,
-  }));
+    // 2. 物件詳細 (Existing Posts)
+    // エラー防止のため件数制限(limit)を追加
+    const postsSnapshot = await adminDb.collection('posts')
+      .where('status', '==', 'open')
+      .limit(1000) 
+      .get();
 
-  // 3. ★追加: コンドミニアムレビュー詳細 (Condominiums)
-  const condosSnapshot = await adminDb.collection('condominiums').get();
-  
-  const condoRoutes = condosSnapshot.docs.map((doc) => ({
-    url: `${BASE_URL}/reviews/${doc.id}`,
-    lastModified: new Date(), // 更新日時フィールドがあればそれを使う
-    changeFrequency: 'weekly' as const,
-    priority: 0.9, // レビューは集客の柱なので優先度高く
-  }));
+    postsSnapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      // timestampがない場合の対策
+      const lastModified = data.timestamp?.toDate ? data.timestamp.toDate() : new Date();
+      
+      for (const lang of languages) {
+        routes.push({
+          url: `${BASE_URL}/${lang}/property/${doc.id}`,
+          lastModified: lastModified,
+          changeFrequency: 'weekly',
+          priority: 0.8,
+        });
+      }
+    });
 
-  return [...staticRoutes, ...postRoutes, ...condoRoutes];
+    // 3. レビュー詳細
+    const condosSnapshot = await adminDb.collection('condominiums')
+        .limit(1000)
+        .get();
+    
+    condosSnapshot.docs.forEach((doc) => {
+      for (const lang of languages) {
+        routes.push({
+          url: `${BASE_URL}/${lang}/reviews/${doc.id}`,
+          lastModified: new Date(),
+          changeFrequency: 'weekly',
+          priority: 0.9,
+        });
+      }
+    });
+
+  } catch (error) {
+    console.error('Sitemap generation error:', error);
+    // エラー時でも最低限のルートだけは返す
+    return languages.map(lang => ({
+        url: `${BASE_URL}/${lang}`,
+        lastModified: new Date(),
+    }));
+  }
+
+  return routes;
 }
