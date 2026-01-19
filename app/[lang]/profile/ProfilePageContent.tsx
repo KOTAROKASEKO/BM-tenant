@@ -62,7 +62,7 @@ const getLatLng = async (address: string): Promise<{ lat: number; lng: number } 
   return null;
 };
 
-export default function ProfilePageContent({ dict }: { dict: Dictionary }) {
+export default function ProfilePageContent({ dict, lang }: { dict: Dictionary; lang: string }) {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -190,7 +190,7 @@ export default function ProfilePageContent({ dict }: { dict: Dictionary }) {
         </div>
 
         {/* --- Saved Listings Link --- */}
-        <Link href="/profile/saved-listings" className="block">
+        <Link href={`/${lang}/profile/saved-listings`} className="block">
           <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-5 shadow-sm transition-all hover:shadow-md hover:border-zinc-300">
              <div className="flex items-center gap-4">
                 <div className="rounded-full bg-purple-50 p-3 text-purple-700">

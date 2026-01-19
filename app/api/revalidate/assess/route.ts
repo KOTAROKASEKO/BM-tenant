@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
           "rating": "(High / Medium / Low)",
           "highlights": ["(近くのスーパー名)", "(近くのモール名)", "(その他施設)"]
         },
-        "comment": "(ここ重要: ${userName}さんに向けた、周辺環境（食・買い物）に関する具体的で率直なアドバイス。日本語で記述)"
+        "comment": "(ここ重要: ${userName}さんに向けた、周辺環境（食・買い物）に関する具体的で率直なアドバイス。ユーザーの言語で記述)"
       }
     `;
 

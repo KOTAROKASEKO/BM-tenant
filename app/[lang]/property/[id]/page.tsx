@@ -9,6 +9,7 @@ import PropertyImageCarousel from "@/components/PropertyImageCarousel"; // ★�
 import CommuteChecker from "@/components/CommuteChecker";
 import ChatButton from "@/components/ChatButton";
 import DescriptionSection from "@/components/DescriptionSection";
+import SaveButton from "@/components/SaveButton";
 
 // --- 型定義 ---
 type AgentProfile = {
@@ -314,23 +315,26 @@ export default async function PropertyDetailPage({ params }: Props) {
                 </div>
 
                 {/* Desktop Actions */}
-                <div className="hidden lg:grid grid-cols-2 gap-3">
-                    {data.userId && (
-                        <ChatButton
-                            agentUserId={data.userId}
-                            lang={lang}
-                            className="flex items-center justify-center gap-2 bg-white border border-zinc-200 py-3.5 rounded-xl font-bold hover:bg-zinc-50 hover:border-zinc-300 transition-all text-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                            variant="desktop"
-                        />
-                    )}
-                    <a 
-                        href={waUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold transition-all shadow-sm ${data.agent.phoneNumber ? "bg-[#25D366] text-white hover:brightness-95" : "bg-zinc-300 text-zinc-500 cursor-not-allowed"}`}
-                    >
-                         <Phone className="h-4 w-4" /> WhatsApp
-                    </a>
+                <div className="hidden lg:space-y-3">
+                    <SaveButton postId={data.id} variant="desktop" />
+                    <div className="grid grid-cols-2 gap-3">
+                        {data.userId && (
+                            <ChatButton
+                                agentUserId={data.userId}
+                                lang={lang}
+                                className="flex items-center justify-center gap-2 bg-white border border-zinc-200 py-3.5 rounded-xl font-bold hover:bg-zinc-50 hover:border-zinc-300 transition-all text-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                                variant="desktop"
+                            />
+                        )}
+                        <a 
+                            href={waUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold transition-all shadow-sm ${data.agent.phoneNumber ? "bg-[#25D366] text-white hover:brightness-95" : "bg-zinc-300 text-zinc-500 cursor-not-allowed"}`}
+                        >
+                             <Phone className="h-4 w-4" /> WhatsApp
+                        </a>
+                    </div>
                 </div>
 
             </div>
@@ -340,23 +344,26 @@ export default async function PropertyDetailPage({ params }: Props) {
 
       {/* Mobile Fixed Action Bar */}
       <div className="fixed bottom-0 left-0 w-full bg-white border-t border-zinc-200 p-4 lg:hidden z-50 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-        <div className="flex gap-3">
-            {data.userId && (
-                <ChatButton
-                    agentUserId={data.userId}
-                    lang={lang}
-                    className="flex-1 flex items-center justify-center gap-2 bg-zinc-100 text-zinc-900 py-3.5 rounded-xl font-bold active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
-                    variant="mobile"
-                />
-            )}
-            <a 
-                href={waUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold shadow-sm active:scale-95 transition-transform ${data.agent.phoneNumber ? "bg-[#25D366] text-white" : "bg-zinc-300 text-zinc-500 cursor-not-allowed"}`}
-            >
-                 <Phone className="h-5 w-5" /> WhatsApp
-            </a>
+        <div className="space-y-2">
+          <SaveButton postId={data.id} variant="mobile" />
+          <div className="flex gap-3">
+              {data.userId && (
+                  <ChatButton
+                      agentUserId={data.userId}
+                      lang={lang}
+                      className="flex-1 flex items-center justify-center gap-2 bg-zinc-100 text-zinc-900 py-3.5 rounded-xl font-bold active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
+                      variant="mobile"
+                  />
+              )}
+              <a 
+                  href={waUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold shadow-sm active:scale-95 transition-transform ${data.agent.phoneNumber ? "bg-[#25D366] text-white" : "bg-zinc-300 text-zinc-500 cursor-not-allowed"}`}
+              >
+                   <Phone className="h-5 w-5" /> WhatsApp
+              </a>
+          </div>
         </div>
       </div>
     </div>

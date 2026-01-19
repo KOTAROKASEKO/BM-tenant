@@ -9,5 +9,5 @@ export default async function ProfilePage({
   const { lang } = await params;
   const dict = await getDictionary(lang as "en" | "ja");
   
-  return <ProfilePageContent dict={dict} />;
+  return <ProfilePageContent dict={dict} lang={lang} />;
 }
