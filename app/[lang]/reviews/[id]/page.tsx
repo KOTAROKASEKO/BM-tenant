@@ -4,6 +4,9 @@ import Link from "next/link";
 import { adminDb } from "@/lib/firebase-admin";
 import { notFound } from "next/navigation";
 import { getDictionary } from "@/lib/get-dictionary";
+import { Metadata } from "next";
+
+const baseUrl = 'https://bm-tenant.vercel.app';
 
 // --- Type Definitions ---
 type CondoData = {
@@ -56,13 +59,23 @@ async function getCondoData(id: string): Promise<CondoData | null> {
   }
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ id: string; lang: string }> }) {
-  const { id } = await params;
+export async function generateMetadata({ params }: { params: Promise<{ id: string; lang: string }> }): Promise<Metadata> {
+  const { id, lang } = await params;
   const data = await getCondoData(id);
   if (!data) return { title: "Review Not Found" };
+  
+  const canonicalUrl = `${baseUrl}/${lang}/reviews/${id}`;
+  
   return {
     title: `${data.name} Reviews | Bilik Match`,
     description: `Real tenant reviews for ${data.name}. Check management quality, pest issues, and security.`,
+    alternates: {
+      canonical: canonicalUrl,
+      languages: {
+        'en': `${baseUrl}/en/reviews/${id}`,
+        'ja': `${baseUrl}/ja/reviews/${id}`,
+      },
+    },
   };
 }
 

@@ -3,11 +3,30 @@ import Link from "next/link";
 import { Search, MapPin, Sparkles, ShieldCheck, Star } from "lucide-react";
 import { adminDb } from "@/lib/firebase-admin";
 import { getDictionary } from "@/lib/get-dictionary";
+import { Metadata } from "next";
 
-export const metadata = {
-  title: "Condo Reviews | Bilik Match",
-  description: "Discover the real living experience. Check management quality and hidden issues before you rent.",
-};
+const baseUrl = 'https://bm-tenant.vercel.app';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}): Promise<Metadata> {
+  const { lang } = await params;
+  const canonicalUrl = `${baseUrl}/${lang}/reviews`;
+
+  return {
+    title: "Condo Reviews | Bilik Match",
+    description: "Discover the real living experience. Check management quality and hidden issues before you rent.",
+    alternates: {
+      canonical: canonicalUrl,
+      languages: {
+        'en': `${baseUrl}/en/reviews`,
+        'ja': `${baseUrl}/ja/reviews`,
+      },
+    },
+  };
+}
 
 // --- Type Definition ---
 type CondoData = {

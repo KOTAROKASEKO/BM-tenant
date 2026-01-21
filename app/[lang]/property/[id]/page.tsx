@@ -137,17 +137,29 @@ async function getPropertyData(id: string): Promise<PropertyData | null> {
   }
 }
 
+const baseUrl = 'https://bm-tenant.vercel.app';
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params;
+  const { id, lang } = await params;
   const data = await getPropertyData(id);
   if (!data) return { title: "Property Not Found | Bilik Match" };
+
+  const canonicalUrl = `${baseUrl}/${lang}/property/${id}`;
 
   return {
     title: `${data.condominiumName} - ${data.roomType} Room | Bilik Match`,
     description: `Rent this ${data.gender} unit at ${data.condominiumName} for RM ${data.rent}.`,
     openGraph: {
       title: `${data.condominiumName} (RM ${data.rent})`,
+      url: canonicalUrl,
       images: data.images[0] ? [data.images[0]] : [],
+    },
+    alternates: {
+      canonical: canonicalUrl,
+      languages: {
+        'en': `${baseUrl}/en/property/${id}`,
+        'ja': `${baseUrl}/ja/property/${id}`,
+      },
     },
   };
 }

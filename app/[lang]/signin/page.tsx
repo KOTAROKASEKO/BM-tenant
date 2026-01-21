@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { LayoutDashboard, ArrowRight, UserCog } from 'lucide-react'; 
 
 // --- Firebase Imports ---
@@ -30,10 +30,16 @@ const SCROLL_COLS = [
 
 export default function SignInPage() {
   const router = useRouter();
+  const params = useParams();
+  const searchParams = useSearchParams();
+  const lang = params?.lang as string || 'ja';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // Get return URL from query params, default to home
+  const returnUrl = searchParams.get('returnUrl') || `/${lang}`;
 
   // --- Helper: Ensure Tenant Profile Exists ---
   const ensureTenantProfile = async (user: any) => {
@@ -71,7 +77,8 @@ export default function SignInPage() {
         // Ensure profile exists (in case they signed up but profile creation failed)
         await ensureTenantProfile(userCredential.user);
         
-        router.push('/'); 
+        // Redirect to return URL or home
+        router.push(returnUrl); 
     } catch (err: any) {
         console.error("Login Error:", err);
         setError(err.message.replace('Firebase:', '').trim());
@@ -93,7 +100,8 @@ export default function SignInPage() {
         // Create Tenant Profile if first time
         await ensureTenantProfile(user);
 
-        router.push('/');
+        // Redirect to return URL or home
+        router.push(returnUrl);
     } catch (err: any) {
         console.error("Google Login Error:", err);
         setError(err.message.replace('Firebase:', '').trim());
@@ -213,7 +221,7 @@ export default function SignInPage() {
 
             <div className="mt-6 text-center">
                 <p className="text-sm text-white/60">
-                    Don't have an account? <Link href="/signup" className="text-white font-bold hover:underline decoration-2 underline-offset-4">Sign up</Link>
+                    Don't have an account? <Link href={`/${lang}/signup?returnUrl=${encodeURIComponent(returnUrl)}`} className="text-white font-bold hover:underline decoration-2 underline-offset-4">Sign up</Link>
                 </p>
             </div>
           </div>

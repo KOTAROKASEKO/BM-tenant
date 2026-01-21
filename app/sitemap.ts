@@ -3,7 +3,7 @@ import { MetadataRoute } from 'next';
 import { adminDb } from '../lib/firebase-admin';
 
 // ★重要修正: ここを実際の運用ドメインに変更
-const BASE_URL = 'https://bilikmatch.com';
+const BASE_URL = 'https://bm-tenant.vercel.app';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const languages = ['en', 'ja']; 

@@ -20,19 +20,26 @@ export function middleware(request: NextRequest) {
     (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
   );
 
-  if (pathnameHasLocale) return;
+  if (pathnameHasLocale) {
+    // Pass pathname to the request for canonical URL generation
+    const response = NextResponse.next();
+    response.headers.set('x-pathname', pathname);
+    return response;
+  }
 
   // ルートパス（/）の場合は言語を検出してリダイレクト
   if (pathname === '/') {
     const locale = getLocale(request);
     request.nextUrl.pathname = `/${locale}`;
-    return NextResponse.redirect(request.nextUrl);
+    // Use 308 permanent redirect for SEO (preserves method)
+    return NextResponse.redirect(request.nextUrl, { status: 308 });
   }
 
   // その他のパスの場合も言語を検出してリダイレクト
   const locale = getLocale(request);
   request.nextUrl.pathname = `/${locale}${pathname}`;
-  return NextResponse.redirect(request.nextUrl);
+  // Use 308 permanent redirect for SEO (preserves method)
+  return NextResponse.redirect(request.nextUrl, { status: 308 });
 }
 
 export const config = {

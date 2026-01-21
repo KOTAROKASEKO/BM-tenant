@@ -28,3 +28,4 @@ admin.initializeApp({
 // 4. Firestoreなどのサービスをエクスポート
 export const adminDb = admin.firestore();
 export const adminAuth = admin.auth();
+export const adminMessaging = admin.messaging();

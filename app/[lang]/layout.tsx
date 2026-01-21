@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import BottomNav from "@/components/BottomNav";
 import LangSetter from "@/components/LangSetter";
+import { headers } from "next/headers";
 import "../globals.css";
 
 const geistSans = Geist({
@@ -19,6 +20,12 @@ const baseUrl = 'https://bm-tenant.vercel.app';
 // ★ SEO対策: サイト全体のメタデータ設定
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
+  const headersList = await headers();
+  const pathname = headersList.get('x-pathname') || `/${lang}`;
+  
+  // Ensure pathname starts with the language prefix
+  const currentPath = pathname.startsWith(`/${lang}`) ? pathname : `/${lang}`;
+  const canonicalUrl = `${baseUrl}${currentPath}`;
   
   return {
     title: {
@@ -29,7 +36,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     openGraph: {
       type: 'website',
       locale: lang === 'ja' ? 'ja_JP' : 'en_US',
-      url: `${baseUrl}/${lang}`,
+      url: canonicalUrl,
       siteName: 'Bilik Match',
       images: [
         {
@@ -41,7 +48,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
       ],
     },
     alternates: {
-      canonical: `${baseUrl}/${lang}`,
+      canonical: canonicalUrl,
       languages: {
         'en': `${baseUrl}/en`,
         'ja': `${baseUrl}/ja`,
