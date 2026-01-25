@@ -151,7 +151,7 @@ export default function SignUpPage() {
         <div className="bg-white/20 backdrop-blur-xl border border-white/30 shadow-2xl rounded-3xl p-8 md:p-10 text-white overflow-hidden relative group">
           
           {/* Shine Effect */}
-          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
+          <div className="absolute top-0 left-0 w-full h-full bg-linear-to-br from-white/10 to-transparent pointer-events-none" />
 
           <div className="relative z-10">
             <div className="text-center mb-6">
@@ -238,9 +238,9 @@ export default function SignUpPage() {
 
             {/* Divider */}
             <div className="relative flex py-2 items-center mt-4">
-                <div className="flex-grow border-t border-white/20"></div>
-                <span className="flex-shrink-0 mx-4 text-white/50 text-xs font-bold uppercase">Or continue with</span>
-                <div className="flex-grow border-t border-white/20"></div>
+                <div className="grow border-t border-white/20"></div>
+                <span className="shrink-0 mx-4 text-white/50 text-xs font-bold uppercase">Or continue with</span>
+                <div className="grow border-t border-white/20"></div>
             </div>
 
             {/* Google Button */}
