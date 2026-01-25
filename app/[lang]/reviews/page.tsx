@@ -5,7 +5,7 @@ import { adminDb } from "@/lib/firebase-admin";
 import { getDictionary } from "@/lib/get-dictionary";
 import { Metadata } from "next";
 
-const baseUrl = 'https://bm-tenant.vercel.app';
+const baseUrl = 'https://bilikmatch.com';
 
 export async function generateMetadata({
   params,

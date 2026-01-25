@@ -5,7 +5,7 @@ import { Search, ShieldCheck, GraduationCap, Home } from "lucide-react";
 import { Metadata } from "next";
 import { getDictionary } from "@/lib/get-dictionary";
 
-const baseUrl = 'https://bm-tenant.vercel.app';
+const baseUrl = 'https://bilikmatch.com';
 
 export async function generateMetadata({
   params,
@@ -57,51 +57,71 @@ export default async function LandingPage({
       <Navbar dict={dict} />
 
       {/* ================= Hero ================= */}
-      <section className="relative px-4 py-24 text-center">
-        <div className="mx-auto max-w-4xl space-y-8">
-          <h1 className="text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">
-            日本人向け<br className="sm:hidden" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
-              マレーシアの部屋探し
-            </span>
-          </h1>
+      <section className="relative px-4 py-24">
+        <div className="mx-auto max-w-4xl space-y-12">
+          {/* Title */}
+          <div className="text-center">
+            <h1 className="text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">
+              日本人向け<br className="sm:hidden" />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
+                マレーシアの部屋探し
+              </span>
+            </h1>
+          </div>
 
-          <p className="mx-auto max-w-2xl text-lg text-zinc-600">
-            条件を伺い、日本語対応エージェントから<br />
-            <strong>最大3件だけ</strong>物件をご紹介します。
-          </p>
-
-          {/* === Main CTA === */}
-          <div className="flex flex-col items-center gap-3">
-            <Link
-              href={`/${lang}/consult`}
-              className="inline-flex h-14 items-center justify-center rounded-2xl bg-black px-10 text-base font-bold text-white shadow-xl transition hover:scale-105 hover:bg-zinc-800"
-            >
-              無料で相談する（物件3件紹介）
-            </Link>
-            <p className="text-xs text-zinc-500">
-              しつこい営業なし・日本語対応のみ
+          {/* ================= Search Section ================= */}
+          <div className="space-y-4">
+            <div className="mx-auto max-w-2xl">
+              <form
+                action={`/${lang}/property`}
+                method="GET"
+                className="relative flex items-center rounded-2xl border-2 border-zinc-200 bg-white shadow-lg transition hover:border-zinc-300 hover:shadow-xl"
+              >
+                <Search className="absolute left-4 h-5 w-5 text-zinc-400" />
+                <input
+                  type="text"
+                  name="q"
+                  placeholder="エリア・学校名など（例: Sunway, KLCC, Monash）"
+                  className="h-16 w-full pl-12 pr-4 text-base outline-none"
+                />
+              </form>
+            </div>
+            <p className="text-center text-sm text-zinc-500">
+              まずは自分で探してみる
             </p>
           </div>
 
-          {/* === Sub CTA (Search) === */}
-          <div className="mx-auto mt-10 max-w-lg">
-            <p className="mb-2 text-sm text-zinc-500">
-              自分で探したい方はこちら
-            </p>
-            <form
-              action={`/${lang}/property`}
-              method="GET"
-              className="relative flex items-center rounded-xl border border-zinc-200 bg-white"
-            >
-              <Search className="absolute left-3 h-5 w-5 text-zinc-400" />
-              <input
-                type="text"
-                name="q"
-                placeholder="エリア・学校名など"
-                className="h-12 w-full pl-10 pr-4 text-sm outline-none"
-              />
-            </form>
+          {/* Divider */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-zinc-200"></div>
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-white px-4 text-sm text-zinc-400">または</span>
+            </div>
+          </div>
+
+          {/* ================= Consult Section ================= */}
+          <div className="space-y-4 text-center">
+            <div>
+              <p className="text-lg text-zinc-700">
+                見つからない場合は、専門家に無料で相談
+              </p>
+              <p className="mt-2 text-sm text-zinc-600">
+                相談も、無料で承っております。
+              </p>
+            </div>
+            <div className="flex flex-col items-center gap-3">
+              <Link
+                href={`/${lang}/consult`}
+                className="inline-flex h-14 items-center justify-center rounded-2xl bg-black px-10 text-base font-bold text-white shadow-xl transition hover:scale-105 hover:bg-zinc-800"
+              >
+                無料で相談する（物件3件紹介）
+              </Link>
+              <p className="text-xs text-zinc-500">
+                しつこい営業なし・日本語対応のみ
+              </p>
+            </div>
           </div>
         </div>
       </section>

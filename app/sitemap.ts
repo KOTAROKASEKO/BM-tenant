@@ -2,8 +2,8 @@ export const dynamic = 'force-dynamic';
 import { MetadataRoute } from 'next';
 import { adminDb } from '../lib/firebase-admin';
 
-// ★重要修正: ここを実際の運用ドメインに変更
-const BASE_URL = 'https://bm-tenant.vercel.app';
+// 本番サイトドメイン (bilikmatch.com)
+const BASE_URL = 'https://bilikmatch.com';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const languages = ['en', 'ja']; 
@@ -11,18 +11,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     // 1. 静的ページ (各言語分)
+    // Note: Language alternates are handled via HTML hreflang tags, not in sitemap
     for (const lang of languages) {
       routes.push({
         url: `${BASE_URL}/${lang}`,
         lastModified: new Date(),
         changeFrequency: 'daily',
-        priority: 1,
+        priority: lang === 'en' ? 1.0 : 0.9, // English as primary
       });
       routes.push({
         url: `${BASE_URL}/${lang}/reviews`,
         lastModified: new Date(),
         changeFrequency: 'weekly',
-        priority: 0.9,
+        priority: lang === 'en' ? 0.9 : 0.8,
       });
     }
 
@@ -43,7 +44,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           url: `${BASE_URL}/${lang}/property/${doc.id}`,
           lastModified: lastModified,
           changeFrequency: 'weekly',
-          priority: 0.8,
+          priority: lang === 'en' ? 0.8 : 0.7,
         });
       }
     });
@@ -59,7 +60,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           url: `${BASE_URL}/${lang}/reviews/${doc.id}`,
           lastModified: new Date(),
           changeFrequency: 'weekly',
-          priority: 0.9,
+          priority: lang === 'en' ? 0.9 : 0.8,
         });
       }
     });

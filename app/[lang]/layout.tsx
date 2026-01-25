@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const baseUrl = 'https://bm-tenant.vercel.app';
+const baseUrl = 'https://bilikmatch.com';
 
 // ★ SEO対策: サイト全体のメタデータ設定
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
       siteName: 'Bilik Match',
       images: [
         {
-          url: 'https://bm-tenant.vercel.app/og-image.jpg',
+          url: 'https://bilikmatch.com/og-image.jpg',
           width: 1200,
           height: 630,
           alt: 'Bilik Match',

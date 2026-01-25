@@ -6,7 +6,7 @@ import { notFound } from "next/navigation";
 import { getDictionary } from "@/lib/get-dictionary";
 import { Metadata } from "next";
 
-const baseUrl = 'https://bm-tenant.vercel.app';
+const baseUrl = 'https://bilikmatch.com';
 
 // --- Type Definitions ---
 type CondoData = {
@@ -124,7 +124,7 @@ export default async function CondoDetailPage({ params }: { params: Promise<{ id
             </div>
           </div>
           {/* Background decoration */}
-          <div className="absolute top-0 right-0 w-64 h-full opacity-10 bg-gradient-to-l from-black to-transparent pointer-events-none"></div>
+          <div className="absolute top-0 right-0 w-64 h-full opacity-10 bg-linear-to-l from-black to-transparent pointer-events-none"></div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">

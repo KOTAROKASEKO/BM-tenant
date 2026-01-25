@@ -1,7 +1,7 @@
 'use server';
 
 export async function revalidateTenantSitemap() {
-  const TENANT_API_URL = 'https://bm-tenant.vercel.app/api/revalidate';
+  const TENANT_API_URL = 'https://bilikmatch.com/api/revalidate';
   const SECRET = process.env.MY_SECRET_TOKEN; // テナント側と同じトークン
 
   try {

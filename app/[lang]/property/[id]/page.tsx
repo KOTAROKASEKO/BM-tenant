@@ -137,7 +137,7 @@ async function getPropertyData(id: string): Promise<PropertyData | null> {
   }
 }
 
-const baseUrl = 'https://bm-tenant.vercel.app';
+const baseUrl = 'https://bilikmatch.com';
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id, lang } = await params;
@@ -271,7 +271,7 @@ export default async function PropertyDetailPage({ params }: Props) {
 
             {condoReview ? (
               <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm overflow-hidden relative group">
-                <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-yellow-50 to-transparent pointer-events-none"></div>
+                <div className="absolute top-0 right-0 w-32 h-full bg-linear-to-l from-yellow-50 to-transparent pointer-events-none"></div>
                 <div className="relative z-10 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="h-12 w-12 bg-black text-white rounded-xl flex items-center justify-center text-xl font-black shadow-lg">
@@ -381,3 +381,4 @@ export default async function PropertyDetailPage({ params }: Props) {
     </div>
   );
 }
+

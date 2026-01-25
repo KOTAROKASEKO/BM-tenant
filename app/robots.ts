@@ -11,7 +11,6 @@ export default function robots(): MetadataRoute.Robots {
         '/api/',             // Block API routes
       ],
     },
-    // Make sure this URL is your actual Tenant domain
-    sitemap: 'https://bm-tenant.vercel.app/sitemap.xml',
+    sitemap: 'https://bilikmatch.com/sitemap.xml',
   };
 }
