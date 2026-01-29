@@ -13,10 +13,14 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { lang } = await params;
   const canonicalUrl = `${baseUrl}/${lang}/consult`;
+  const isJa = lang === "ja";
 
   return {
-    title: "無料相談（物件3件紹介） | Bilik Match",
-    description: "条件をもとに、日本語対応エージェントから最大3件だけ物件をご紹介します。",
+    title: isJa ? "マレーシア 賃貸 無料相談（物件3件紹介） | Bilik Match" : "Free Consultation (3 Properties) | Bilik Match",
+    description: isJa
+      ? "マレーシア移住・マレーシア賃貸の無料相談。条件を伺い、日本語対応エージェントから最大3件だけ物件をご紹介。"
+      : "Get up to 3 property introductions from Japanese-friendly agents. Free consultation.",
+    ...(isJa && { keywords: "マレーシア 賃貸 相談, マレーシア 移住 相談, KL 賃貸 無料相談" }),
     alternates: {
       canonical: canonicalUrl,
       languages: {
