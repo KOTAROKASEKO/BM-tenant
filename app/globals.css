@@ -30,3 +30,14 @@ body {
 /* Hide scrollbar */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Floating AI prompt gradient border */
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.animate-gradient-border {
+  background: linear-gradient(135deg, rgba(34,211,238,0.4), rgba(168,85,247,0.3), rgba(34,211,238,0.4));
+  background-size: 200% 200%;
+  animation: gradient-shift 4s ease infinite;
+}

@@ -221,7 +221,7 @@ export default async function PropertyDetailPage({ params }: Props) {
 
       <main className="mx-auto max-w-5xl px-4 py-6">
         <Link href={`/${lang}`} className="mb-6 flex items-center gap-2 text-sm font-semibold text-zinc-500 hover:text-black transition-colors">
-          <ArrowLeft className="h-4 w-4" /> Back to Listings
+          <ArrowLeft className="h-4 w-4" /> {dict.reviews.back_to_listings}
         </Link>
 
         {/* ★変更点: 新しい画像カルーセルを使用 */}
@@ -246,20 +246,20 @@ export default async function PropertyDetailPage({ params }: Props) {
                             className="inline-flex items-center gap-2 bg-yellow-50 text-yellow-700 px-3 py-1.5 rounded-lg text-sm font-bold border border-yellow-100 hover:bg-yellow-100 transition-colors"
                         >
                             <Star className="h-3.5 w-3.5 fill-current" /> 
-                            <span>Condo Rating: {condoReview.rating} / 5.0</span>
+                            <span>{dict.reviews.condo_rating}: {condoReview.rating} / 5.0</span>
                             <ChevronRight className="h-3 w-3 opacity-50" />
                         </Link>
                     )}
                 </div>
                 <div className="text-left md:text-right shrink-0">
                     <p className="text-3xl font-black text-black">RM {data.rent}</p>
-                    <p className="text-xs text-zinc-400 uppercase tracking-wide font-bold">Per Month</p>
+                    <p className="text-xs text-zinc-400 uppercase tracking-wide font-bold">{dict.reviews.per_month}</p>
                 </div>
               </div>
 
               <div className="mt-6 flex flex-wrap gap-3">
-                <span className="px-4 py-1.5 bg-black text-white text-xs font-bold rounded-full">{data.roomType} Room</span>
-                <span className="px-4 py-1.5 border border-zinc-200 text-zinc-700 text-xs font-bold rounded-full">{data.gender} Unit</span>
+                <span className="px-4 py-1.5 bg-black text-white text-xs font-bold rounded-full">{data.roomType} {dict.reviews.room}</span>
+                <span className="px-4 py-1.5 border border-zinc-200 text-zinc-700 text-xs font-bold rounded-full">{data.gender} {dict.reviews.unit}</span>
               </div>
             </div>
 
@@ -271,22 +271,22 @@ export default async function PropertyDetailPage({ params }: Props) {
 
             {condoReview ? (
               <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm overflow-hidden relative group">
-                <div className="absolute top-0 right-0 w-32 h-full bg-linear-to-l from-yellow-50 to-transparent pointer-events-none"></div>
+                <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-yellow-50 to-transparent pointer-events-none"></div>
                 <div className="relative z-10 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="h-12 w-12 bg-black text-white rounded-xl flex items-center justify-center text-xl font-black shadow-lg">
                       {condoReview.rating}
                     </div>
                     <div>
-                      <h4 className="font-bold text-lg text-zinc-900">Tenant Reviews</h4>
-                      <p className="text-sm text-zinc-500">See the truth about {data.condominiumName}</p>
+                      <h4 className="font-bold text-lg text-zinc-900">{dict.reviews.tenant_reviews}</h4>
+                      <p className="text-sm text-zinc-500">{dict.reviews.see_truth_about.replace("{{name}}", data.condominiumName)}</p>
                     </div>
                   </div>
                   <Link 
-                    href={`/reviews/${condoReview.id}`}
+                    href={`/${lang}/reviews/${condoReview.id}`}
                     className="flex items-center gap-2 px-5 py-2.5 bg-black text-white rounded-xl font-bold text-sm hover:bg-zinc-800 transition-all hover:scale-105 active:scale-95 shadow-md"
                   >
-                    Read Reviews <ChevronRight className="h-4 w-4" />
+                    {dict.reviews.read_reviews} <ChevronRight className="h-4 w-4" />
                   </Link>
                 </div>
               </div>

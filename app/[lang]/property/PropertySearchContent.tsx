@@ -279,9 +279,33 @@ export default function PropertySearchContent({ dict }: { dict: Dictionary }) {
               Reset
             </button>
           </div>
-          {/* ... (既存のRoom Type, Gender, Price RangeなどのUI) ... */}
-           {/* Room Type */}
-           <div className="space-y-3">
+
+          {/* Price Range */}
+          <div className="space-y-3">
+            <span className="text-xs font-bold text-zinc-400 uppercase">Price (RM / month)</span>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={0}
+                placeholder="Min"
+                value={filters.minRent}
+                onChange={(e) => handleFilterChange("minRent", e.target.value)}
+                className="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-700 placeholder-zinc-400 outline-none focus:border-black focus:ring-1 focus:ring-black/10"
+              />
+              <span className="text-zinc-400 text-sm">–</span>
+              <input
+                type="number"
+                min={0}
+                placeholder="Max"
+                value={filters.maxRent}
+                onChange={(e) => handleFilterChange("maxRent", e.target.value)}
+                className="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-700 placeholder-zinc-400 outline-none focus:border-black focus:ring-1 focus:ring-black/10"
+              />
+            </div>
+          </div>
+
+          {/* Room Type */}
+          <div className="space-y-3">
             <span className="text-xs font-bold text-zinc-400 uppercase">Room Type</span>
             <div className="flex flex-wrap gap-2">
               {["Any", "Single", "Middle", "Master"].map((type) => (
@@ -301,7 +325,28 @@ export default function PropertySearchContent({ dict }: { dict: Dictionary }) {
               ))}
             </div>
           </div>
-          {/* (略) */}
+
+          {/* Gender */}
+          <div className="space-y-3">
+            <span className="text-xs font-bold text-zinc-400 uppercase">Gender</span>
+            <div className="flex flex-wrap gap-2">
+              {["Any", "Male", "Female"].map((g) => (
+                <label key={g} className="cursor-pointer">
+                  <input
+                    type="radio"
+                    name="gender"
+                    className="peer hidden"
+                    value={g === "Any" ? "any" : g}
+                    checked={filters.gender === (g === "Any" ? "any" : g)}
+                    onChange={(e) => handleFilterChange("gender", e.target.value)}
+                  />
+                  <span className="block rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-600 transition-all peer-checked:bg-black peer-checked:text-white hover:border-black">
+                    {g}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
         </aside>
 
         {/* --- MAIN CONTENT --- */}
@@ -309,6 +354,64 @@ export default function PropertySearchContent({ dict }: { dict: Dictionary }) {
           
           {/* Banner (省略: 既存のコード) */}
           
+          {/* Mobile filters (visible when sidebar is hidden) */}
+          <div className="mb-4 flex flex-wrap items-center gap-3 lg:hidden">
+            <span className="text-xs font-bold text-zinc-500 uppercase">Filters</span>
+            <div className="flex flex-wrap gap-2">
+              <input
+                type="number"
+                min={0}
+                placeholder="Min RM"
+                value={filters.minRent}
+                onChange={(e) => handleFilterChange("minRent", e.target.value)}
+                className="w-20 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-700 placeholder-zinc-400 outline-none focus:border-black"
+              />
+              <input
+                type="number"
+                min={0}
+                placeholder="Max RM"
+                value={filters.maxRent}
+                onChange={(e) => handleFilterChange("maxRent", e.target.value)}
+                className="w-20 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-700 placeholder-zinc-400 outline-none focus:border-black"
+              />
+              {["Any", "Single", "Middle", "Master"].map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => handleFilterChange("roomType", type === "Any" ? "any" : type)}
+                  className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                    filters.roomType === (type === "Any" ? "any" : type)
+                      ? "border-black bg-black text-white"
+                      : "border-zinc-200 text-zinc-600 hover:border-zinc-400"
+                  }`}
+                >
+                  {type}
+                </button>
+              ))}
+              {["Any", "Male", "Female"].map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => handleFilterChange("gender", g === "Any" ? "any" : g)}
+                  className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                    filters.gender === (g === "Any" ? "any" : g)
+                      ? "border-black bg-black text-white"
+                      : "border-zinc-200 text-zinc-600 hover:border-zinc-400"
+                  }`}
+                >
+                  {g}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => setFilters({ minRent: "", maxRent: "", gender: "any", roomType: "any" })}
+              className="text-xs font-semibold text-zinc-400 hover:text-black"
+            >
+              Reset
+            </button>
+          </div>
+
           {/* ==================================================================================== */}
           {/* ★ Search Bar with Psychological "80% Rule" Filter */}
           {/* ==================================================================================== */}

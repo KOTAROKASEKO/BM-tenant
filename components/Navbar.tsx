@@ -20,14 +20,16 @@ type Dictionary = {
 };
 
 export default function Navbar({ dict }: { dict: Dictionary }) {
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const params = useParams();
-  const lang = (params?.lang as string) || "en";
+  const lang = mounted ? ((params?.lang as string) || "en") : "en";
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
@@ -61,7 +63,7 @@ export default function Navbar({ dict }: { dict: Dictionary }) {
           {/* --- RIGHT: Actions --- */}
           {/* Desktop: Show all buttons */}
           <div className="hidden md:flex items-center gap-3">
-          {loading ? (
+          {!mounted || loading ? (
             <Loader2 className="h-5 w-5 animate-spin text-zinc-300" />
           ) : (
             <>
@@ -178,7 +180,7 @@ export default function Navbar({ dict }: { dict: Dictionary }) {
 
             {/* Menu Items */}
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
-              {loading ? (
+              {!mounted || loading ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-5 w-5 animate-spin text-zinc-300" />
                 </div>

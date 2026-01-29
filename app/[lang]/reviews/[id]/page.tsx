@@ -26,32 +26,49 @@ type CondoData = {
   imageUrl: string;
 };
 
+// Resolve URL slug to Firestore doc in "condominiums". Doc ID = name as lowercase, spaces → "-" (e.g. "M vertica" → "m-vertica").
+async function getDocSnapshot(id: string) {
+  const col = adminDb.collection("condominiums");
+  const decoded = decodeURIComponent(id).trim();
+  let snap = await col.doc(decoded).get();
+  if (snap.exists) return snap;
+  const kebabId = decoded.toLowerCase().replace(/\s+/g, "-");
+  snap = await col.doc(kebabId).get();
+  if (snap.exists) return snap;
+  const noSpaceId = decoded.toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9]/g, "");
+  snap = await col.doc(noSpaceId).get();
+  return snap.exists ? snap : null;
+}
+
 // --- Fetch Function ---
 async function getCondoData(id: string): Promise<CondoData | null> {
   if (!id) return null;
   try {
-    const docRef = adminDb.collection("condominiums").doc(id);
-    const docSnap = await docRef.get();
-    
-    if (!docSnap.exists) return null;
+    const docSnap = await getDocSnapshot(id);
+    if (!docSnap) return null;
     
     const data = docSnap.data() as any;
-    
+    // Firestore doc: name, location, imageUrl live under features; rating/tags/externalLinks at top level
+    const features = data.features || {};
+    const name = features.name ?? data.name ?? "Unknown Property";
+    const location = features.location ?? data.location ?? "Malaysia";
+    const imageUrl = features.imageUrl ?? data.imageUrl ?? "https://placehold.co/600x400?text=No+Image";
+
     return {
       id: docSnap.id,
-      name: data.name || "Unknown Property",
-      location: data.location || "Malaysia",
+      name,
+      location,
       description: data.description || "Detailed reviews and scores for this property are analyzed below based on real tenant feedback.",
       rating: {
-        overall: data.rating?.overall || 0,
-        management: data.rating?.management || 0,
-        security: data.rating?.security || 0,
-        cleanliness: data.rating?.cleanliness || 0,
-        facilities: data.rating?.facilities || 0,
+        overall: data.rating?.overall ?? 0,
+        management: data.rating?.management ?? 0,
+        security: data.rating?.security ?? 0,
+        cleanliness: data.rating?.cleanliness ?? 0,
+        facilities: data.rating?.facilities ?? 0,
       },
       tags: data.tags || [],
       externalLinks: data.externalLinks || [],
-      imageUrl: data.imageUrl || "https://placehold.co/600x400?text=No+Image"
+      imageUrl: imageUrl || "https://placehold.co/600x400?text=No+Image"
     };
   } catch (err) {
     console.error(err);
@@ -62,13 +79,15 @@ async function getCondoData(id: string): Promise<CondoData | null> {
 export async function generateMetadata({ params }: { params: Promise<{ id: string; lang: string }> }): Promise<Metadata> {
   const { id, lang } = await params;
   const data = await getCondoData(id);
-  if (!data) return { title: "Review Not Found" };
+  const dict = await getDictionary(lang as "en" | "ja");
+  if (!data) return { title: dict.reviews.review_not_found };
   
   const canonicalUrl = `${baseUrl}/${lang}/reviews/${id}`;
+  const description = dict.reviews.reviews_meta_description.replace("{{name}}", data.name);
   
   return {
-    title: `${data.name} Reviews | Bilik Match`,
-    description: `Real tenant reviews for ${data.name}. Check management quality, pest issues, and security.`,
+    title: `${data.name} ${dict.reviews.detail_title_suffix} | Bilik Match`,
+    description,
     alternates: {
       canonical: canonicalUrl,
       languages: {
@@ -87,10 +106,10 @@ export default async function CondoDetailPage({ params }: { params: Promise<{ id
   if (!data) return notFound();
 
   const details = [
-    { label: "Management", score: data.rating.management, icon: <Shield className="h-4 w-4"/> },
-    { label: "Security", score: data.rating.security, icon: <Shield className="h-4 w-4"/> },
-    { label: "Cleanliness", score: data.rating.cleanliness, icon: <Trash2 className="h-4 w-4"/> },
-    { label: "Facilities", score: data.rating.facilities, icon: <Activity className="h-4 w-4"/> },
+    { label: dict.reviews.management_label, score: data.rating.management, icon: <Shield className="h-4 w-4"/> },
+    { label: dict.reviews.security, score: data.rating.security, icon: <Shield className="h-4 w-4"/> },
+    { label: dict.reviews.cleanliness, score: data.rating.cleanliness, icon: <Trash2 className="h-4 w-4"/> },
+    { label: dict.reviews.facilities, score: data.rating.facilities, icon: <Activity className="h-4 w-4"/> },
   ];
 
   return (
@@ -99,7 +118,7 @@ export default async function CondoDetailPage({ params }: { params: Promise<{ id
       
       <main className="mx-auto max-w-4xl px-4 py-8">
         <Link href={`/${lang}/reviews`} className="flex items-center gap-2 text-xs font-bold text-zinc-500 hover:text-black mb-6 transition-colors">
-            <ArrowLeft className="h-3 w-3" /> Back to Reviews
+            <ArrowLeft className="h-3 w-3" /> {dict.reviews.back_to_reviews}
         </Link>
         
         {/* Header Card */}
@@ -119,12 +138,12 @@ export default async function CondoDetailPage({ params }: { params: Promise<{ id
                         <Star key={i} className={`h-4 w-4 ${i < Math.floor(data.rating.overall) ? "fill-current" : "text-zinc-200"}`} />
                     ))}
                     </div>
-                    <span className="text-xs text-zinc-400 font-bold uppercase tracking-wide">Overall Score</span>
+                    <span className="text-xs text-zinc-400 font-bold uppercase tracking-wide">{dict.reviews.overall_score}</span>
                 </div>
             </div>
           </div>
           {/* Background decoration */}
-          <div className="absolute top-0 right-0 w-64 h-full opacity-10 bg-linear-to-l from-black to-transparent pointer-events-none"></div>
+          <div className="absolute top-0 right-0 w-64 h-full opacity-10 bg-gradient-to-l from-black to-transparent pointer-events-none"></div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -132,7 +151,7 @@ export default async function CondoDetailPage({ params }: { params: Promise<{ id
           {/* Management Score Card */}
           <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
             <h2 className="font-bold text-lg mb-6 flex items-center gap-2">
-                <Activity className="h-5 w-5 text-zinc-400" /> Quality Breakdown
+                <Activity className="h-5 w-5 text-zinc-400" /> {dict.reviews.quality_breakdown}
             </h2>
             <div className="space-y-5">
               {details.map((item, i) => (
@@ -156,7 +175,7 @@ export default async function CondoDetailPage({ params }: { params: Promise<{ id
 
           {/* Tags Card (Deal Breakers) */}
           <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
-            <h2 className="font-bold text-lg mb-6">Real Tenant Feedback</h2>
+            <h2 className="font-bold text-lg mb-6">{dict.reviews.real_tenant_feedback}</h2>
             <div className="flex flex-wrap gap-2">
               {data.tags.map((tag, i) => (
                 <span 
@@ -173,14 +192,14 @@ export default async function CondoDetailPage({ params }: { params: Promise<{ id
               ))}
             </div>
             <div className="mt-6 p-3 bg-zinc-50 rounded-xl border border-zinc-100 text-xs text-zinc-500 leading-relaxed">
-               <strong>Why this matters:</strong> These tags are extracted from hundreds of social media posts to help you spot "Deal Breakers" instantly.
+               {dict.reviews.why_matters}
             </div>
           </div>
         </div>
 
         {/* Verification / External Links */}
         <div className="bg-zinc-100 p-6 rounded-2xl border border-zinc-200">
-            <h3 className="font-bold text-xs uppercase tracking-wider text-zinc-500 mb-4">Verification Sources</h3>
+            <h3 className="font-bold text-xs uppercase tracking-wider text-zinc-500 mb-4">{dict.reviews.verification_sources}</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {data.externalLinks.map((link, i) => (
                     <a 
@@ -194,7 +213,7 @@ export default async function CondoDetailPage({ params }: { params: Promise<{ id
                             <span className="font-bold text-sm text-zinc-900">{link.source}</span>
                             <ExternalLink className="h-3 w-3 text-zinc-400 group-hover:text-black" />
                         </div>
-                        <p className="text-xs text-zinc-500 line-clamp-2">{link.summary || "Click to view original source"}</p>
+                        <p className="text-xs text-zinc-500 line-clamp-2">{link.summary || dict.reviews.click_to_view_source}</p>
                     </a>
                 ))}
             </div>

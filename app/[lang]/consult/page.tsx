@@ -1,4 +1,5 @@
 // app/[lang]/consult/page.tsx
+// Consultation is no longer offered; page kept for backwards compatibility.
 import Link from "next/link";
 import ConsultForm from "../consult/ConsultForm";
 import { Metadata } from "next";
@@ -39,16 +40,6 @@ export default async function ConsultPage({
         <Link href={`/${lang}`} className="text-sm text-zinc-500 underline">
           ← 戻る
         </Link>
-
-        <h1 className="mt-6 text-3xl font-black">
-          無料相談（物件3件紹介）
-        </h1>
-
-        <p className="mt-3 text-zinc-600">
-          条件をもとに、日本語対応エージェントから
-          <strong>最大3件</strong>だけご紹介します。
-        </p>
-
         <ConsultForm />
       </div>
     </div>
