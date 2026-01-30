@@ -42,7 +42,7 @@ export default async function LandingPage({
   const isJa = lang === 'ja';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white to-blue-900 text-zinc-900">
+    <div className="min-h-screen bg-white text-zinc-900">
       <JsonLd lang={lang} isHomePage />
       <Navbar dict={dict} />
 
@@ -71,7 +71,7 @@ export default async function LandingPage({
               <form
                 action={`/${lang}/property`}
                 method="GET"
-                className="relative flex items-center rounded-2xl border-2 border-zinc-200 bg-white/80 backdrop-blur-sm shadow-xl transition hover:border-indigo-300 hover:shadow-2xl"
+                className="relative flex items-center rounded-2xl border-2 border-zinc-200 bg-white shadow-lg transition hover:border-indigo-300 hover:shadow-xl"
               >
                 <Search className="absolute left-6 h-6 w-6 text-zinc-400" />
                 <input
