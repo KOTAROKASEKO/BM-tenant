@@ -11,7 +11,7 @@ export default function BottomNav() {
   const isActive = (path: string) => pathname === path;
 
   return (
-    <div className="fixed bottom-0 left-0 z-50 w-full border-t border-zinc-200 bg-white pb-safe lg:hidden">
+    <div className="hidden fixed bottom-0 left-0 z-50 w-full border-t border-zinc-200 bg-white pb-safe lg:hidden" aria-hidden="true">
       <div className="flex h-16 items-center justify-around">
         <BottomTab 
           href="/chat" 

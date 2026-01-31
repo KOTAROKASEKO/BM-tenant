@@ -2,7 +2,7 @@
 import Navbar from "@/components/Navbar";
 import FloatingAIPrompt from "@/components/FloatingAIPrompt";
 import JsonLd from "@/components/JsonLd";
-import { Search, ShieldCheck, GraduationCap, Home, MessageSquareHeart, Zap, MapPin } from "lucide-react";
+import { Search, ShieldCheck, GraduationCap, Home, MessageSquareHeart, Zap, MapPin, Navigation, ArrowRight } from "lucide-react";
 import { Metadata } from "next";
 import { getDictionary } from "@/lib/get-dictionary";
 import Image from "next/image"; // 画像表示用にちついか
@@ -85,6 +85,46 @@ export default async function LandingPage({
             <p className="text-center text-sm text-zinc-500">
               {dict.landing.search_hint}
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ================= Life Simulator Feature ================= */}
+      <section className="py-20 bg-zinc-50">
+        <div className="mx-auto max-w-5xl px-4">
+          <div className="rounded-3xl bg-white border border-zinc-200 shadow-sm overflow-hidden">
+            <div className="grid gap-0 lg:grid-cols-2 lg:items-center">
+              <div className="p-8 lg:p-12 space-y-6">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 text-indigo-700 text-sm font-bold border border-indigo-100">
+                  <Navigation className="h-4 w-4" />
+                  {dict.landing.life_simulator_title}
+                </div>
+                <h2 className="text-2xl font-bold leading-tight sm:text-3xl text-zinc-900">
+                  {dict.landing.life_simulator_catch}
+                </h2>
+                <p className="text-zinc-600 leading-relaxed">
+                  {dict.landing.life_simulator_desc}
+                </p>
+                <a
+                  href={`/${lang}/property`}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-black text-white font-bold hover:bg-zinc-800 transition-colors"
+                >
+                  {dict.landing.life_simulator_cta}
+                  <ArrowRight className="h-4 w-4" />
+                </a>
+              </div>
+              <div className="bg-gradient-to-br from-indigo-50 to-zinc-100 p-8 lg:p-12 flex items-center justify-center min-h-[240px]">
+                <div className="text-center space-y-2">
+                  <div className="text-6xl">🏠</div>
+                  <p className="text-sm font-bold text-zinc-500 uppercase tracking-wider">
+                    {dict.landing.life_simulator_title}
+                  </p>
+                  <p className="text-xs text-zinc-400 max-w-[200px] mx-auto">
+                    {isJa ? "物件ページでワンクリック" : "One click on property page"}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>

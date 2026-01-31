@@ -85,7 +85,7 @@ export default async function LangLayout({
       <LangSetter />
       {children}
       
-      {/* Bottom Nav (モバイル用) - 常に表示 */}
+      {/* Bottom Nav: hidden on phone; use drawer Home → Discover instead */}
       <BottomNav />
     </>
   );

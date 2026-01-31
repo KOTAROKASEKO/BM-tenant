@@ -44,7 +44,11 @@
     "feature3_text_short": "大量紹介ではなく、条件に合う3件のみ。",
     "meta_title_ja": "マレーシア 賃貸・移住の部屋探し｜KL・日本人向け無料相談 | Bilik Match",
     "meta_description_ja": "マレーシア移住・マレーシア賃貸のための部屋探し。日本人向けにKL周辺の賃貸物件を無料で3件紹介。日本語対応エージェント、しつこい営業なし。",
-    "ai_prompt_placeholder": "AIに部屋のことを聞く... Enterで開く"
+    "ai_prompt_placeholder": "AIに部屋のことを聞く... Enterで開く",
+    "life_simulator_title": "ライフシミュレーター",
+    "life_simulator_catch": "ワンクリックで「落とし穴」を発見。リアルな「ここに住んだら？」シミュレーター。",
+    "life_simulator_desc": "物件ページでワンクリック。その住所から職場・学校までの通勤をAIが分析。契約前に「デッドブレーカー」を見つけられます。",
+    "life_simulator_cta": "物件を検索して試す"
   },
   "reviews": {
     "page_title": "皆んなのお家レビュー | Bilik Match",

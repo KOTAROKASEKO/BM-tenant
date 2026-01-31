@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useParams } from "next/navigation";
-import { User, MessageCircle, Loader2, Menu, X, Star } from "lucide-react";
+import { User, MessageCircle, Loader2, Menu, X, Star, Home } from "lucide-react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import clsx from "clsx";
@@ -38,6 +38,7 @@ export default function Navbar({ dict }: { dict: Dictionary }) {
   }, []);
 
   const isActive = (path: string) => pathname === path;
+  const isDiscover = pathname === `/${lang}` || pathname === `/${lang}/`;
 
   const closeDrawer = () => setDrawerOpen(false);
   const toggleDrawer = () => setDrawerOpen(!drawerOpen);
@@ -186,6 +187,24 @@ export default function Navbar({ dict }: { dict: Dictionary }) {
                 </div>
               ) : (
                 <>
+                  {/* Home / Discover */}
+                  <Link href={`/${lang}`} onClick={closeDrawer}>
+                    <div
+                      className={clsx(
+                        "flex items-center gap-3 p-4 rounded-xl transition-all",
+                        isDiscover
+                          ? "bg-black text-white"
+                          : "bg-zinc-50 text-zinc-900 hover:bg-zinc-100"
+                      )}
+                    >
+                      <Home className="h-5 w-5" />
+                      <div className="flex-1">
+                        <div className="font-semibold">{dict.nav.discover ?? "Discover"}</div>
+                        <div className="text-xs opacity-70">Home · Search & AI room finder</div>
+                      </div>
+                    </div>
+                  </Link>
+
                   {/* Condominium Reviews */}
                   <Link href={`/${lang}/reviews`} onClick={closeDrawer}>
                     <div
