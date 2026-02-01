@@ -2,6 +2,7 @@
 import Navbar from "@/components/Navbar";
 import FloatingAIPrompt from "@/components/FloatingAIPrompt";
 import JsonLd from "@/components/JsonLd";
+import LifeSimulatorLottie from "@/components/LifeSimulatorLottie";
 import { Search, ShieldCheck, GraduationCap, Home, MessageSquareHeart, Zap, MapPin, Navigation, ArrowRight } from "lucide-react";
 import { Metadata } from "next";
 import { getDictionary } from "@/lib/get-dictionary";
@@ -114,15 +115,7 @@ export default async function LandingPage({
                 </a>
               </div>
               <div className="bg-gradient-to-br from-indigo-50 to-zinc-100 p-8 lg:p-12 flex items-center justify-center min-h-[240px]">
-                <div className="text-center space-y-2">
-                  <div className="text-6xl">🏠</div>
-                  <p className="text-sm font-bold text-zinc-500 uppercase tracking-wider">
-                    {dict.landing.life_simulator_title}
-                  </p>
-                  <p className="text-xs text-zinc-400 max-w-[200px] mx-auto">
-                    {isJa ? "物件ページでワンクリック" : "One click on property page"}
-                  </p>
-                </div>
+                <LifeSimulatorLottie />
               </div>
             </div>
           </div>

@@ -43,8 +43,8 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // api, _next, 画像ファイルなどを除外する設定
+  // api, _next, 静的ファイル（画像・JSONなど）を除外する設定
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|json)$).*)',
   ],
 };
