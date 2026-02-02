@@ -78,6 +78,10 @@ export default function PropertySearchContent({ dict }: { dict: Dictionary }) {
   const lang = params?.lang as string || "en";
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
+  const initialEssentialsParam = searchParams.get("essentials") || "";
+  const initialNiceParam = searchParams.get("nice") || "";
+  const initialEssentials = initialEssentialsParam.split(",").filter(Boolean).slice(0, 3);
+  const initialNiceToHaves = initialNiceParam.split(",").filter(Boolean).slice(0, 2);
 
   const [hits, setHits] = useState<AlgoliaHit[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,8 +104,8 @@ export default function PropertySearchContent({ dict }: { dict: Dictionary }) {
   const searchContainerRef = useRef<HTMLDivElement>(null);
   
   // 選択された条件IDのリスト
-  const [selectedEssentials, setSelectedEssentials] = useState<string[]>([]);
-  const [selectedNiceToHaves, setSelectedNiceToHaves] = useState<string[]>([]);
+  const [selectedEssentials, setSelectedEssentials] = useState<string[]>(initialEssentials);
+  const [selectedNiceToHaves, setSelectedNiceToHaves] = useState<string[]>(initialNiceToHaves);
 
   // ★ 定義: 選択肢
   const ESSENTIAL_OPTIONS = [
@@ -131,6 +135,20 @@ export default function PropertySearchContent({ dict }: { dict: Dictionary }) {
     });
     return () => unsubscribe();
   }, []);
+
+  // Sync query param -> search state (fixes hydration/param updates)
+  useEffect(() => {
+    setSearchQuery(initialQuery);
+  }, [initialQuery]);
+
+  // Sync smart filter params -> selection state
+  useEffect(() => {
+    setSelectedEssentials(initialEssentials);
+    setSelectedNiceToHaves(initialNiceToHaves);
+    if (initialEssentials.length > 0) {
+      initialEssentials.forEach((id) => applySmartFilter(id, true));
+    }
+  }, [initialEssentialsParam, initialNiceParam]);
 
   // Click Outside Handler to close the smart filter
   useEffect(() => {

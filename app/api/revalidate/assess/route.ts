@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
 
       【タスク】
       以下のJSON形式で出力してください。Markdownのコードが必要です。生JSONのみを返してください。
-      特に "comment" フィールドでは、"${userName}さんがここに住む場合..." という書き出しで、
+      "analysis" の各セクションでは、"${userName}さんがここに住む場合..." という書き出しで、
       スーパー、コンビニ、飲食店（レストラン・ホーカー）の充実度を含めて、
       「駅は近いけれど飲食店が少ない」「スーパーが遠いので自炊派には不便かも」といった具体的なメリット・デメリットを指摘してください。
 
@@ -118,7 +118,10 @@ export async function POST(req: NextRequest) {
           "rating": "(High / Medium / Low)",
           "highlights": ["(近くのスーパー名)", "(近くのモール名)", "(その他施設)"]
         },
-        "comment": "(ここ重要: ${userName}さんに向けた、周辺環境（食・買い物）に関する具体的で率直なアドバイス。ユーザーの言語で記述)"
+        "analysis": {
+          "commute": "(${userName}さんがここに住む場合... 通勤に関する具体的で率直なアドバイス。ユーザーの言語で記述)",
+          "food": "(${userName}さんがここに住む場合... 周辺の食・買い物に関する具体的で率直なアドバイス。ユーザーの言語で記述)"
+        }
       }
     `;
 
@@ -140,7 +143,10 @@ export async function POST(req: NextRequest) {
         score: 75,
         commute: { duration: "Unknown", mode: "Check Map", details: "Could not analyze commute." },
         convenience: { rating: "Medium", highlights: [] },
-        comment: `${userName}さん、申し訳ありません。AIによる解析に失敗しましたが、${origin}は一般的に人気のあるエリアです。`
+        analysis: {
+          commute: `${userName}さん、申し訳ありません。AIによる解析に失敗しました。通勤情報は地図で確認してください。`,
+          food: `${userName}さん、申し訳ありません。AIによる解析に失敗しましたが、${origin}は一般的に人気のあるエリアです。`
+        }
       };
     }
 

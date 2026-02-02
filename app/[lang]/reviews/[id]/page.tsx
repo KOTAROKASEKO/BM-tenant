@@ -91,6 +91,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     alternates: {
       canonical: canonicalUrl,
       languages: {
+        'x-default': `${baseUrl}/en/reviews/${id}`,
         'en': `${baseUrl}/en/reviews/${id}`,
         'ja': `${baseUrl}/ja/reviews/${id}`,
       },

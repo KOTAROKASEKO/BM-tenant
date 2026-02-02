@@ -6,6 +6,7 @@ import { auth, db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { Loader2, MapPin, Navigation, AlertCircle, CheckCircle2, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -16,10 +17,13 @@ export default function CommuteChecker({
   propertyId: string, 
   propertyLocation: string 
 }) {
+  const params = useParams();
+  const lang = (params?.lang as string) || "en";
   // 1. Auth States
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true); // Check if auth is still loading
   const [username, setUsername] = useState<string>("");
+  const [hasProfile, setHasProfile] = useState<boolean | null>(null);
 
   // 2. Logic States
   const [analyzing, setAnalyzing] = useState(false);
@@ -39,15 +43,19 @@ export default function CommuteChecker({
           if (userDoc.exists()) {
             const userData = userDoc.data();
             setUsername(userData.displayName || currentUser.displayName || "User");
+            setHasProfile(true);
           } else {
             setUsername(currentUser.displayName || "User");
+            setHasProfile(false);
           }
         } catch (err) {
           console.error("Error fetching user profile:", err);
           setUsername(currentUser.displayName || "User");
+          setHasProfile(null);
         }
       } else {
         setUsername("");
+        setHasProfile(null);
       }
     });
     return () => unsubscribe();
@@ -136,26 +144,57 @@ export default function CommuteChecker({
 
              <div className="bg-white p-4 rounded-lg border border-zinc-200">
                 <h4 className="text-xs font-bold uppercase text-zinc-500 mb-3 tracking-wider">AI Analysis</h4>
-                <div className="prose prose-sm max-w-none text-zinc-700">
-                    <ReactMarkdown 
-                        remarkPlugins={[remarkGfm]}
-                        components={{
-                            p: ({node, ...props}) => <p className="mb-3 last:mb-0 leading-relaxed text-sm" {...props} />,
-                            strong: ({node, ...props}) => <strong className="font-bold text-zinc-900" {...props} />,
-                            em: ({node, ...props}) => <em className="italic text-zinc-600" {...props} />,
-                            ul: ({node, ...props}) => <ul className="list-disc list-inside mb-3 space-y-1.5 ml-2" {...props} />,
-                            ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-3 space-y-1.5 ml-2" {...props} />,
-                            li: ({node, ...props}) => <li className="text-sm leading-relaxed" {...props} />,
-                            h1: ({node, ...props}) => <h1 className="text-lg font-bold text-zinc-900 mb-2 mt-4 first:mt-0" {...props} />,
-                            h2: ({node, ...props}) => <h2 className="text-base font-bold text-zinc-900 mb-2 mt-3 first:mt-0" {...props} />,
-                            h3: ({node, ...props}) => <h3 className="text-sm font-bold text-zinc-900 mb-1 mt-2 first:mt-0" {...props} />,
-                            blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-blue-300 pl-3 py-1 my-2 italic text-zinc-600 bg-blue-50 rounded-r" {...props} />,
-                            code: ({node, ...props}) => <code className="bg-zinc-100 px-1.5 py-0.5 rounded text-xs font-mono text-zinc-800" {...props} />,
-                            hr: ({node, ...props}) => <hr className="my-4 border-zinc-200" {...props} />,
-                        }}
-                    >
-                        {result.comment}
-                    </ReactMarkdown>
+                <div className="space-y-4">
+                    <div>
+                        <h5 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Commute</h5>
+                        <div className="prose prose-sm max-w-none text-zinc-700">
+                            <ReactMarkdown 
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                    p: ({node, ...props}) => <p className="mb-3 last:mb-0 leading-relaxed text-sm" {...props} />,
+                                    strong: ({node, ...props}) => <strong className="font-bold text-zinc-900" {...props} />,
+                                    em: ({node, ...props}) => <em className="italic text-zinc-600" {...props} />,
+                                    ul: ({node, ...props}) => <ul className="list-disc list-inside mb-3 space-y-1.5 ml-2" {...props} />,
+                                    ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-3 space-y-1.5 ml-2" {...props} />,
+                                    li: ({node, ...props}) => <li className="text-sm leading-relaxed" {...props} />,
+                                    h1: ({node, ...props}) => <h1 className="text-lg font-bold text-zinc-900 mb-2 mt-4 first:mt-0" {...props} />,
+                                    h2: ({node, ...props}) => <h2 className="text-base font-bold text-zinc-900 mb-2 mt-3 first:mt-0" {...props} />,
+                                    h3: ({node, ...props}) => <h3 className="text-sm font-bold text-zinc-900 mb-1 mt-2 first:mt-0" {...props} />,
+                                    blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-blue-300 pl-3 py-1 my-2 italic text-zinc-600 bg-blue-50 rounded-r" {...props} />,
+                                    code: ({node, ...props}) => <code className="bg-zinc-100 px-1.5 py-0.5 rounded text-xs font-mono text-zinc-800" {...props} />,
+                                    hr: ({node, ...props}) => <hr className="my-4 border-zinc-200" {...props} />,
+                                }}
+                            >
+                                {result.analysis?.commute || result.comment}
+                            </ReactMarkdown>
+                        </div>
+                    </div>
+                    {(result.analysis?.food || result.comment) && (
+                        <div>
+                            <h5 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Food</h5>
+                            <div className="prose prose-sm max-w-none text-zinc-700">
+                                <ReactMarkdown 
+                                    remarkPlugins={[remarkGfm]}
+                                    components={{
+                                        p: ({node, ...props}) => <p className="mb-3 last:mb-0 leading-relaxed text-sm" {...props} />,
+                                        strong: ({node, ...props}) => <strong className="font-bold text-zinc-900" {...props} />,
+                                        em: ({node, ...props}) => <em className="italic text-zinc-600" {...props} />,
+                                        ul: ({node, ...props}) => <ul className="list-disc list-inside mb-3 space-y-1.5 ml-2" {...props} />,
+                                        ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-3 space-y-1.5 ml-2" {...props} />,
+                                        li: ({node, ...props}) => <li className="text-sm leading-relaxed" {...props} />,
+                                        h1: ({node, ...props}) => <h1 className="text-lg font-bold text-zinc-900 mb-2 mt-4 first:mt-0" {...props} />,
+                                        h2: ({node, ...props}) => <h2 className="text-base font-bold text-zinc-900 mb-2 mt-3 first:mt-0" {...props} />,
+                                        h3: ({node, ...props}) => <h3 className="text-sm font-bold text-zinc-900 mb-1 mt-2 first:mt-0" {...props} />,
+                                        blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-blue-300 pl-3 py-1 my-2 italic text-zinc-600 bg-blue-50 rounded-r" {...props} />,
+                                        code: ({node, ...props}) => <code className="bg-zinc-100 px-1.5 py-0.5 rounded text-xs font-mono text-zinc-800" {...props} />,
+                                        hr: ({node, ...props}) => <hr className="my-4 border-zinc-200" {...props} />,
+                                    }}
+                                >
+                                    {result.analysis?.food || result.comment}
+                                </ReactMarkdown>
+                            </div>
+                        </div>
+                    )}
                 </div>
              </div>
         </div>
@@ -170,14 +209,31 @@ export default function CommuteChecker({
                 Log in to Check Commute
             </Link>
         ) : (
-            <button 
-                onClick={handleCheck}
-                disabled={analyzing}
-                className="w-full py-3 rounded-xl bg-black text-white font-bold hover:bg-zinc-800 transition-all active:scale-[0.98] flex justify-center items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-            >
-                {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                {analyzing ? "Analyzing..." : `See life simulator of ${username}`}
-            </button>
+            <div className="space-y-3">
+                {hasProfile === false && (
+                    <div className="rounded-lg bg-amber-50 border border-amber-100 p-3 text-xs text-amber-700 font-semibold">
+                        You can add more about yourself from your profile to enhance this analysis.{" "}
+                        <Link href={`/${lang}/profile`} className="underline underline-offset-2 font-bold">
+                          Go to Profile
+                        </Link>
+                    </div>
+                )}
+                <button 
+                    onClick={handleCheck}
+                    disabled={analyzing}
+                    className="w-full py-3 rounded-xl bg-black text-white font-bold hover:bg-zinc-800 transition-all active:scale-[0.98] flex justify-center items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                    {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    {analyzing ? "Analyzing..." : `See life simulator of ${username}`}
+                </button>
+                <Link
+                  href={`/${lang}/profile`}
+                  className="block mt-3 text-xs text-zinc-500 hover:text-zinc-700 underline underline-offset-2"
+                >
+                  Enriching your profile will improve the accuracy of the analysis
+                </Link>
+            </div>
+            
         )
       )}
     </div>

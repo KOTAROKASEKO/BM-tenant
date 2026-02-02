@@ -23,10 +23,14 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   const headersList = await headers();
   const pathname = headersList.get('x-pathname') || `/${lang}`;
   
-  // Ensure pathname starts with the language prefix
+  // Ensure pathname starts with the language prefix (no trailing slash for consistent canonical)
   const currentPath = pathname.startsWith(`/${lang}`) ? pathname : `/${lang}`;
-  const canonicalUrl = `${baseUrl}${currentPath}`;
-  
+  const canonicalUrl = `${baseUrl}${currentPath}`.replace(/\/$/, '') || `${baseUrl}/${lang}`;
+  // Path without locale for correct hreflang (same page in each language)
+  const pathWithoutLang = pathname.replace(/^\/(en|ja)/, '') || '';
+  const enPath = `${baseUrl}/en${pathWithoutLang}`.replace(/\/$/, '') || `${baseUrl}/en`;
+  const jaPath = `${baseUrl}/ja${pathWithoutLang}`.replace(/\/$/, '') || `${baseUrl}/ja`;
+
   const isJa = lang === 'ja';
   const defaultTitle = isJa
     ? 'マレーシア 賃貸・移住の部屋探し | Bilik Match'
@@ -63,8 +67,9 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     alternates: {
       canonical: canonicalUrl,
       languages: {
-        'en': `${baseUrl}/en`,
-        'ja': `${baseUrl}/ja`,
+        'x-default': enPath,
+        'en': enPath,
+        'ja': jaPath,
       },
     },
   };

@@ -157,6 +157,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     alternates: {
       canonical: canonicalUrl,
       languages: {
+        'x-default': `${baseUrl}/en/property/${id}`,
         'en': `${baseUrl}/en/property/${id}`,
         'ja': `${baseUrl}/ja/property/${id}`,
       },
@@ -327,7 +328,7 @@ export default async function PropertyDetailPage({ params }: Props) {
                 </div>
 
                 {/* Desktop Actions */}
-                <div className="hidden lg:space-y-3">
+                <div className="hidden lg:flex lg:flex-col lg:space-y-3">
                     <SaveButton postId={data.id} variant="desktop" />
                     <div className="grid grid-cols-2 gap-3">
                         {data.userId && (

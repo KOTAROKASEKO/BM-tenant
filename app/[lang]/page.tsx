@@ -3,7 +3,8 @@ import Navbar from "@/components/Navbar";
 import FloatingAIPrompt from "@/components/FloatingAIPrompt";
 import JsonLd from "@/components/JsonLd";
 import LifeSimulatorLottie from "@/components/LifeSimulatorLottie";
-import { Search, ShieldCheck, GraduationCap, Home, MessageSquareHeart, Zap, MapPin, Navigation, ArrowRight } from "lucide-react";
+import LandingSearch from "@/components/LandingSearch";
+import { ShieldCheck, GraduationCap, MessageSquareHeart, Zap, Navigation, ArrowRight } from "lucide-react";
 import { Metadata } from "next";
 import { getDictionary } from "@/lib/get-dictionary";
 import Image from "next/image"; // 画像表示用にちついか
@@ -26,6 +27,7 @@ export async function generateMetadata({
     alternates: {
       canonical: canonicalUrl,
       languages: {
+        'x-default': `${baseUrl}/en`,
         'en': `${baseUrl}/en`,
         'ja': `${baseUrl}/ja`,
       },
@@ -69,19 +71,10 @@ export default async function LandingPage({
           {/* ================= Search Section ================= */}
           <div className="space-y-4">
             <div className="mx-auto max-w-2xl">
-              <form
+              <LandingSearch
                 action={`/${lang}/property`}
-                method="GET"
-                className="relative flex items-center rounded-2xl border-2 border-zinc-200 bg-white shadow-lg transition hover:border-indigo-300 hover:shadow-xl"
-              >
-                <Search className="absolute left-6 h-6 w-6 text-zinc-400" />
-                <input
-                  type="text"
-                  name="q"
-                  placeholder={dict.landing.search_placeholder}
-                  className="h-16 w-full rounded-2xl bg-transparent pl-16 pr-6 text-lg outline-none placeholder:text-zinc-400"
-                />
-              </form>
+                placeholder={dict.landing.search_placeholder}
+              />
             </div>
             <p className="text-center text-sm text-zinc-500">
               {dict.landing.search_hint}
