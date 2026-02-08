@@ -98,6 +98,7 @@ export default function ChatButton({
 
   return (
     <button
+      id="chat_with_agent_button"
       onClick={handleChat}
       disabled={loading}
       className={className}
