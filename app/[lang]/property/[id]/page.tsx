@@ -8,6 +8,7 @@ import { getDictionary } from "@/lib/get-dictionary";
 import PropertyImageCarousel from "@/components/PropertyImageCarousel"; // ★追加
 import CommuteChecker from "@/components/CommuteChecker";
 import ChatButton from "@/components/ChatButton";
+import PropertyViewTracker from "@/components/PropertyViewTracker";
 import DescriptionSection from "@/components/DescriptionSection";
 import SaveButton from "@/components/SaveButton";
 
@@ -219,6 +220,7 @@ export default async function PropertyDetailPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <Navbar dict={dict} />
+      <PropertyViewTracker postId={data.id} />
 
       <main className="mx-auto max-w-5xl px-4 py-6">
         <Link href={`/${lang}`} className="mb-6 flex items-center gap-2 text-sm font-semibold text-zinc-500 hover:text-black transition-colors">
@@ -335,6 +337,7 @@ export default async function PropertyDetailPage({ params }: Props) {
                             <ChatButton
                                 agentUserId={data.userId}
                                 lang={lang}
+                                postId={data.id}
                                 className="flex items-center justify-center gap-2 bg-white border border-zinc-200 py-3.5 rounded-xl font-bold hover:bg-zinc-50 hover:border-zinc-300 transition-all text-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed"
                                 variant="desktop"
                             />
@@ -364,6 +367,7 @@ export default async function PropertyDetailPage({ params }: Props) {
                   <ChatButton
                       agentUserId={data.userId}
                       lang={lang}
+                      postId={data.id}
                       className="flex-1 flex items-center justify-center gap-2 bg-zinc-100 text-zinc-900 py-3.5 rounded-xl font-bold active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
                       variant="mobile"
                   />

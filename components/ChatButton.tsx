@@ -10,6 +10,7 @@ import { MessageCircle } from "lucide-react";
 type ChatButtonProps = {
   agentUserId: string;
   lang: string;
+  postId?: string;
   className?: string;
   variant?: "desktop" | "mobile";
 };
@@ -17,6 +18,7 @@ type ChatButtonProps = {
 export default function ChatButton({ 
   agentUserId, 
   lang,
+  postId,
   className = "",
   variant = "desktop"
 }: ChatButtonProps) {
@@ -75,6 +77,13 @@ export default function ChatButton({
           [`unreadCount_${agentUserId}`]: 1,
           [`unreadCount_${currentUser.uid}`]: 0,
         });
+        if (postId) {
+          fetch("/api/analytics/lead", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ postId }),
+          }).catch(() => {});
+        }
       }
 
       // Navigate to chat page with thread ID

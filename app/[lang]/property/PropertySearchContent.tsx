@@ -245,6 +245,9 @@ export default function PropertySearchContent({ dict }: { dict: Dictionary }) {
         searchParamsAlgolia.aroundRadius = targetRadius;
       }
 
+      // Debug: print the query used in property search
+      console.log("[PropertySearch] Algolia query:", JSON.stringify(searchParamsAlgolia, null, 2));
+
       const response = await searchClient.search({
         requests: [searchParamsAlgolia],
       });
@@ -260,6 +263,18 @@ export default function PropertySearchContent({ dict }: { dict: Dictionary }) {
       setLoading(false);
     }
   }, [searchQuery, filters, selectedNiceToHaves]); // Dependencies updated
+
+  // Track impressions: when search results are shown, record impression for each post
+  useEffect(() => {
+    if (loading || hits.length === 0) return;
+    const postIds = hits.map((h) => h.objectID).filter(Boolean);
+    if (postIds.length === 0) return;
+    fetch("/api/analytics/impression", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ postIds }),
+    }).catch(() => {});
+  }, [hits, loading]);
 
   // Debounce
   useEffect(() => {
@@ -603,6 +618,15 @@ export default function PropertySearchContent({ dict }: { dict: Dictionary }) {
                                     <MapPin className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
                                     <span className="truncate">{hit.location || "Unknown Location"}</span>
                                 </div>
+                                {hit.manualTags && hit.manualTags.length > 0 && (
+                                  <div className="flex flex-wrap gap-1.5 pt-1">
+                                    {hit.manualTags.map((tag) => (
+                                      <span key={tag} className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-600">
+                                        {tag}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
                             </div>
                          </div>
                     </Link>

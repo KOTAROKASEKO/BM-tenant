@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     const decodedToken = await adminAuth.verifyIdToken(token);
     const uid = decodedToken.uid;
 
-    const { propertyId, propertyLocation } = await req.json();
+    const { propertyId, propertyLocation, lang: preferredLang } = await req.json();
 
     if (!propertyId) {
       return NextResponse.json({ error: "Property ID is required" }, { status: 400 });
@@ -85,9 +85,18 @@ export async function POST(req: NextRequest) {
     const budget = userData?.budget ? `RM ${userData.budget}` : "Not specified";
     const preferences = userData?.selfIntroduction || "";
 
+    // ユーザー言語: アプリの lang に合わせて AI の出力言語を指定
+    const langMap: Record<string, string> = {
+      ja: "日本語",
+      en: "English",
+    };
+    const outputLanguage = langMap[preferredLang === "ja" ? "ja" : "en"] ?? "English";
+
     // 5. Geminiへのプロンプト作成 (具体的かつパーソナライズされた指示)
     const prompt = `
       あなたはマレーシアの不動産エキスパートです。以下のユーザーに対して、指定された物件エリアの「住みやすさ」を診断してください。
+
+      【重要】ユーザーの表示言語は ${outputLanguage} です。analysis.commute、analysis.food、および commute.details のテキストはすべて ${outputLanguage} で記述してください。それ以外のフィールド（duration, mode の値など）も、ユーザーが読む部分は ${outputLanguage} にしてください。
       
       【ユーザー情報】
       - 名前: ${userName}
@@ -99,28 +108,30 @@ export async function POST(req: NextRequest) {
       - 場所: ${origin}
 
       【タスク】
-      以下のJSON形式で出力してください。Markdownのコードが必要です。生JSONのみを返してください。
-      "analysis" の各セクションでは、"${userName}さんがここに住む場合..." という書き出しで、
+      以下のJSON形式で出力してください。Markdownのコードは不要です。生JSONのみを返してください。
+      "analysis" の各セクションでは、ユーザーに語りかける形で、
       スーパー、コンビニ、飲食店（レストラン・ホーカー）の充実度を含めて、
-      「駅は近いけれど飲食店が少ない」「スーパーが遠いので自炊派には不便かも」といった具体的なメリット・デメリットを指摘してください。
+      具体的なメリット・デメリットを指摘してください。すべて ${outputLanguage} で書いてください。
+      "ifILiveHere" は、「もし私がここに住んだら」という視点で、この物件エリアの総合的な印象を 2〜4 文でまとめた要約にしてください。通勤・利便性・食生活を織り交ぜ、${outputLanguage} で書いてください。
 
       【出力フォーマット (JSON)】
       {
         "score": (0-100の整数),
+        "ifILiveHere": "(${outputLanguage}で。「もし私がここに住んだら」の視点で 2〜4 文の要約。通勤・利便性・食を織り交ぜる)",
         "commute": {
           "origin": "${origin}",
           "destination": "${destination}",
-          "duration": "(例: 25-35 mins)",
-          "mode": "(例: Train (LRT Kelana Jaya Line))",
-          "details": "(通勤ルートの簡潔な説明)"
+          "duration": "(${outputLanguage}で。例: 25-35分 または 25-35 mins)",
+          "mode": "(${outputLanguage}で。例: 電車(LRT Kelana Jaya Line) または Train (LRT Kelana Jaya Line))",
+          "details": "(${outputLanguage}で通勤ルートの簡潔な説明)"
         },
         "convenience": {
           "rating": "(High / Medium / Low)",
           "highlights": ["(近くのスーパー名)", "(近くのモール名)", "(その他施設)"]
         },
         "analysis": {
-          "commute": "(${userName}さんがここに住む場合... 通勤に関する具体的で率直なアドバイス。ユーザーの言語で記述)",
-          "food": "(${userName}さんがここに住む場合... 周辺の食・買い物に関する具体的で率直なアドバイス。ユーザーの言語で記述)"
+          "commute": "(${outputLanguage}で。通勤に関する具体的で率直なアドバイス)",
+          "food": "(${outputLanguage}で。周辺の食・買い物に関する具体的で率直なアドバイス)"
         }
       }
     `;
@@ -138,15 +149,28 @@ export async function POST(req: NextRequest) {
       jsonResponse = JSON.parse(cleanedText);
     } catch (e) {
       console.error("JSON Parse Error:", text);
-      // パース失敗時のフォールバック
+      const isJa = preferredLang === "ja";
+      const fallbackCommute = isJa
+        ? `${userName}さん、申し訳ありません。AIによる解析に失敗しました。通勤情報は地図で確認してください。`
+        : `Sorry, the AI analysis failed. Please check the map for commute information.`;
+      const fallbackFood = isJa
+        ? `${userName}さん、申し訳ありません。AIによる解析に失敗しましたが、${origin}は一般的に人気のあるエリアです。`
+        : `Sorry, the AI analysis failed, but ${origin} is generally a popular area.`;
+      const fallbackIfILiveHere = isJa
+        ? `${userName}さんがここに住む場合、通勤は地図で確認することをおすすめします。${origin}は一般的に人気のあるエリアです。`
+        : `If you live here, check the map for your commute. ${origin} is generally a popular area.`;
       jsonResponse = {
         score: 75,
-        commute: { duration: "Unknown", mode: "Check Map", details: "Could not analyze commute." },
+        ifILiveHere: fallbackIfILiveHere,
+        commute: {
+          origin,
+          destination,
+          duration: isJa ? "不明" : "Unknown",
+          mode: isJa ? "地図で確認" : "Check Map",
+          details: isJa ? "通勤の解析に失敗しました。" : "Could not analyze commute."
+        },
         convenience: { rating: "Medium", highlights: [] },
-        analysis: {
-          commute: `${userName}さん、申し訳ありません。AIによる解析に失敗しました。通勤情報は地図で確認してください。`,
-          food: `${userName}さん、申し訳ありません。AIによる解析に失敗しましたが、${origin}は一般的に人気のあるエリアです。`
-        }
+        analysis: { commute: fallbackCommute, food: fallbackFood }
       };
     }
 

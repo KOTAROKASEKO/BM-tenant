@@ -1,4 +1,5 @@
 import Navbar from "@/components/Navbar";
+import CommuteChecker from "@/components/CommuteChecker";
 import { Star, Shield, Trash2, Activity, ExternalLink, MapPin, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { adminDb } from "@/lib/firebase-admin";
@@ -147,7 +148,13 @@ export default async function CondoDetailPage({ params }: { params: Promise<{ id
           <div className="absolute top-0 right-0 w-64 h-full opacity-10 bg-gradient-to-l from-black to-transparent pointer-events-none"></div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        {/* AI Life Simulator - What if you live in this condo? */}
+        <CommuteChecker
+          propertyId={data.id}
+          propertyLocation={data.location}
+        />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 mt-6">
           
           {/* Management Score Card */}
           <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
