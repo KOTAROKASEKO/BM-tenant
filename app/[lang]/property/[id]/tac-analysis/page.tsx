@@ -5,6 +5,8 @@ import Link from "next/link";
 import { ArrowLeft, FileText, Sparkles } from "lucide-react";
 import { adminDb } from "@/lib/firebase-admin";
 import { getDictionary } from "@/lib/get-dictionary";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export const dynamic = "force-dynamic";
 
@@ -73,30 +75,47 @@ export default async function TacAnalysisPage({ params }: Props) {
             </div>
           </div>
 
-          <div className="p-6">
+          <div className="p-6 space-y-4">
+            {/* User prompt (fixed text) — top-right style */}
+            <div className="flex justify-end">
+              <div className="max-w-[85%] rounded-2xl rounded-tr-sm bg-zinc-100 px-4 py-3 text-right">
+                <p className="text-sm font-medium text-zinc-800">
+                  Is it ok to sign up this form? Please read through it and let me know if there is any suspicious information. The TAC is here:
+                </p>
+              </div>
+            </div>
+
+            {/* AI response (summary) */}
             {data.tacAnalysisText ? (
-              <div className="prose prose-zinc max-w-none">
-                <div className="whitespace-pre-wrap text-zinc-700 text-sm leading-relaxed">
-                  {data.tacAnalysisText}
+              <div className="flex justify-start">
+                <div className="max-w-[90%] rounded-2xl rounded-tl-sm bg-amber-50 border border-amber-100 px-4 py-4">
+                  <p className="text-xs font-semibold text-amber-700 mb-2">AI Summary</p>
+                  <div className="prose prose-zinc max-w-none text-sm leading-relaxed">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {data.tacAnalysisText}
+                    </ReactMarkdown>
+                  </div>
                 </div>
               </div>
             ) : (
-              <div className="text-center py-8">
-                <p className="text-zinc-500 font-medium mb-2">AI analysis is not available yet.</p>
-                <p className="text-sm text-zinc-400 mb-6">The agent may add analysis later, or you can read the TAC document directly.</p>
-                <a
-                  href={data.tacFileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-black text-white rounded-xl font-bold text-sm hover:bg-zinc-800 transition-colors"
-                >
-                  <FileText className="h-4 w-4" /> View TAC document
-                </a>
+              <div className="flex justify-start">
+                <div className="max-w-[90%] rounded-2xl rounded-tl-sm bg-zinc-50 border border-zinc-200 px-4 py-4 text-center">
+                  <p className="text-zinc-500 font-medium mb-2">AI analysis is not available yet.</p>
+                  <p className="text-sm text-zinc-400 mb-4">The agent may add analysis later, or you can read the TAC document directly.</p>
+                  <a
+                    href={data.tacFileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-black text-white rounded-xl font-bold text-sm hover:bg-zinc-800 transition-colors"
+                  >
+                    <FileText className="h-4 w-4" /> View TAC document
+                  </a>
+                </div>
               </div>
             )}
 
             {data.tacAnalysisText && data.tacFileUrl && (
-              <div className="mt-8 pt-6 border-t border-zinc-100">
+              <div className="pt-4 border-t border-zinc-100">
                 <a
                   href={data.tacFileUrl}
                   target="_blank"

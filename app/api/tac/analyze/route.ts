@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb, adminAuth } from "@/lib/firebase-admin";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { PDFParse } from "pdf-parse";
+import { extractText, getDocumentProxy } from "unpdf";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
@@ -17,6 +17,10 @@ export async function OPTIONS() {
 
 export async function POST(req: NextRequest) {
   try {
+    const body = await req.json().catch(() => ({}));
+    const postId = typeof body?.postId === "string" ? body.postId : null;
+    console.log("[TAC analyze] POST received", postId ? `postId=${postId}` : "(no postId)");
+
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders });
@@ -25,8 +29,7 @@ export async function POST(req: NextRequest) {
     const decodedToken = await adminAuth.verifyIdToken(token);
     const uid = decodedToken.uid;
 
-    const { postId } = await req.json();
-    if (!postId || typeof postId !== "string") {
+    if (!postId) {
       return NextResponse.json({ error: "postId is required" }, { status: 400, headers: corsHeaders });
     }
 
@@ -42,6 +45,7 @@ export async function POST(req: NextRequest) {
 
     const tacFileUrl = postData.tacFileUrl;
     if (!tacFileUrl || typeof tacFileUrl !== "string") {
+      console.log("[TAC analyze] 400: No TAC file on this listing. postId=", postId, "has tacFileUrl:", !!tacFileUrl);
       return NextResponse.json({ error: "No TAC file on this listing" }, { status: 400, headers: corsHeaders });
     }
 
@@ -57,10 +61,9 @@ export async function POST(req: NextRequest) {
         });
         return NextResponse.json({ success: true, message: "Non-PDF; fallback saved" }, { headers: corsHeaders });
       }
-      const parser = new PDFParse({ data: new Uint8Array(buffer) });
-      const textResult = await parser.getText();
-      rawText = textResult?.text ?? "";
-      await parser.destroy();
+      const pdf = await getDocumentProxy(new Uint8Array(buffer));
+      const { text } = await extractText(pdf, { mergePages: true });
+      rawText = (text ?? "").trim();
     } catch (parseErr) {
       console.error("TAC PDF parse error:", parseErr);
       await postRef.update({
@@ -76,18 +79,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, message: "Analysis saved (minimal text)" }, { headers: corsHeaders });
     }
 
-    const prompt = `You are an expert in tenancy agreements and rental contracts in Malaysia. Below is the raw text extracted from a TAC (Title and Conditions) or tenancy agreement document.
+    const prompt = `You are an expert in tenancy agreements and rental contracts in Malaysia.
 
-Summarize it in a clear, tenant-friendly way. Use plain English. Structure your summary with short headings and bullet points where helpful. Include:
-- Key terms (rent, deposit, duration)
-- Notice period and renewal
-- Restrictions (pets, subletting, etc.)
-- Landlord/tenant obligations
-- Any important clauses tenants should know
+Task:
+Read the tenancy agreement (TAC) text and evaluate ONLY risk for the tenant.
 
-Keep the summary concise but useful (about 300–600 words). If the text is unclear or incomplete, say so and summarize what you can.
+Output rules:
+- Keep the response VERY SHORT.
+- Start with: Safe / Mostly Safe / Risky / Very Risky
+- Then list ONLY major problems (max 5 bullets).
+- Ignore minor details.
+- If no serious issue, say: "No major risk found."
+- Do NOT explain law, background, or general advice.
 
-Document text:
+TAC text:
 ---
 ${rawText.slice(0, 28000)}
 ---
