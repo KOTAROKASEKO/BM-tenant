@@ -20,6 +20,8 @@
     "lucide-react": "^0.562.0",
     "moment": "^2.30.1",
     "next": "16.1.1",
+    "nextjs-toploader": "^3.9.17",
+    "pdf-parse": "^2.4.5",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-markdown": "^10.1.0",

@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Navbar from "@/components/Navbar";
-import { MapPin, CheckCircle2, MessageCircle, Phone, ArrowLeft, Bus, Star, ChevronRight } from "lucide-react";
+import { MapPin, CheckCircle2, MessageCircle, Phone, ArrowLeft, Bus, Star, ChevronRight, FileText, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { adminDb } from "@/lib/firebase-admin";
 import { getDictionary } from "@/lib/get-dictionary";
@@ -33,6 +33,9 @@ type PropertyData = {
   images: string[];
   userId?: string;
   agent: AgentProfile;
+  tacFileUrl?: string | null;
+  tacFileName?: string | null;
+  tacAnalysisText?: string | null;
 };
 
 type Props = {
@@ -130,7 +133,10 @@ async function getPropertyData(id: string): Promise<PropertyData | null> {
         ? postData.imageUrls 
         : ["https://placehold.co/600x400?text=No+Image"],
       userId: postData.userId,
-      agent: agentInfo
+      agent: agentInfo,
+      tacFileUrl: postData.tacFileUrl || null,
+      tacFileName: postData.tacFileName || null,
+      tacAnalysisText: postData.tacAnalysisText || null
     };
   } catch (error) {
     console.error("Server Error fetching property:", error);
@@ -297,6 +303,37 @@ export default async function PropertyDetailPage({ params }: Props) {
 
             {/* Description */}
             <DescriptionSection description={data.description} />
+
+            {/* TAC & AI Analysis */}
+            {data.tacFileUrl && (
+              <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center">
+                    <FileText className="h-6 w-6 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-zinc-900">TAC Document</p>
+                    <p className="text-sm text-zinc-500">{data.tacFileName || "Title & Conditions"}</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-3 ml-auto">
+                  <a
+                    href={data.tacFileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 border border-zinc-200 rounded-xl font-bold text-sm text-zinc-700 hover:bg-zinc-50 transition-colors"
+                  >
+                    <FileText className="h-4 w-4" /> View document
+                  </a>
+                  <Link
+                    href={`/${lang}/property/${data.id}/tac-analysis`}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-black text-white rounded-xl font-bold text-sm hover:bg-zinc-800 transition-colors"
+                  >
+                    <Sparkles className="h-4 w-4" /> See AI analysis
+                  </Link>
+                </div>
+              </div>
+            )}
 
              {/* Agent Info */}
              <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm flex items-center justify-between">
