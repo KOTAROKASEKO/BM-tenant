@@ -36,6 +36,22 @@ body {
   0%, 100% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
 }
+/* Shimmer loading (fake AI) */
+@keyframes shimmer-slide {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.shimmer-bg {
+  background: linear-gradient(
+    90deg,
+    rgb(254 243 199 / 0.6) 0%,
+    rgb(253 230 138 / 0.85) 50%,
+    rgb(254 243 199 / 0.6) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer-slide 1.2s ease-in-out infinite;
+}
+
 .animate-gradient-border {
   background: linear-gradient(135deg, rgba(34,211,238,0.4), rgba(168,85,247,0.3), rgba(34,211,238,0.4));
   background-size: 200% 200%;

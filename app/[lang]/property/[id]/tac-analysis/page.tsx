@@ -7,6 +7,7 @@ import { adminDb } from "@/lib/firebase-admin";
 import { getDictionary } from "@/lib/get-dictionary";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import TacSummaryWithShimmer from "@/components/TacSummaryWithShimmer";
 
 export const dynamic = "force-dynamic";
 
@@ -85,9 +86,9 @@ export default async function TacAnalysisPage({ params }: Props) {
               </div>
             </div>
 
-            {/* AI response (summary) */}
+            {/* AI response (summary) — 1s shimmer then reveal */}
             {data.tacAnalysisText ? (
-              <div className="flex justify-start">
+              <TacSummaryWithShimmer delayMs={3000}>
                 <div className="max-w-[90%] rounded-2xl rounded-tl-sm bg-amber-50 border border-amber-100 px-4 py-4">
                   <p className="text-xs font-semibold text-amber-700 mb-2">AI Summary</p>
                   <div className="prose prose-zinc max-w-none text-sm leading-relaxed">
@@ -96,7 +97,7 @@ export default async function TacAnalysisPage({ params }: Props) {
                     </ReactMarkdown>
                   </div>
                 </div>
-              </div>
+              </TacSummaryWithShimmer>
             ) : (
               <div className="flex justify-start">
                 <div className="max-w-[90%] rounded-2xl rounded-tl-sm bg-zinc-50 border border-zinc-200 px-4 py-4 text-center">
