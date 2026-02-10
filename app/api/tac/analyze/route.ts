@@ -81,16 +81,13 @@ export async function POST(req: NextRequest) {
 
     const prompt = `You are an expert in tenancy agreements and rental contracts in Malaysia.
 
-Task:
-Read the tenancy agreement (TAC) text and evaluate ONLY risk for the tenant.
+the question is: is it ok to sign up this form? please read through it and let me know if there is any suspicious information.
 
 Output rules:
-- Keep the response VERY SHORT.
-- Start with: Safe / Mostly Safe / Risky / Very Risky
-- Then list ONLY major problems (max 5 bullets).
+- Keep the response conciese.
+- Then list major problems
 - Ignore minor details.
 - If no serious issue, say: "No major risk found."
-- Do NOT explain law, background, or general advice.
 
 TAC text:
 ---
