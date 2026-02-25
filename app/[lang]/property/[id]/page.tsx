@@ -13,7 +13,6 @@ import DescriptionSection from "@/components/DescriptionSection";
 import SaveButton from "@/components/SaveButton";
 import TacSummaryExpandable from "@/components/TacSummaryExpandable";
 
-// --- 型定義 ---
 type AgentProfile = {
   name: string;
   verified: boolean;
