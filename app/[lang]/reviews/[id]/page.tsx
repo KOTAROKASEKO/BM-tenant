@@ -1,4 +1,5 @@
 import Navbar from "@/components/Navbar";
+import CondoReviewGtag from "@/components/CondoReviewGtag";
 import CommuteChecker from "@/components/CommuteChecker";
 import { Star, Shield, Trash2, Activity, ExternalLink, MapPin, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -116,6 +117,7 @@ export default async function CondoDetailPage({ params }: { params: Promise<{ id
 
   return (
     <div className="min-h-screen bg-zinc-50 font-sans pb-24">
+      <CondoReviewGtag />
       <Navbar dict={dict} />
       
       <main className="mx-auto max-w-4xl px-4 py-8">

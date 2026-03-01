@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Navbar from "@/components/Navbar";
+import CondoReviewGtag from "@/components/CondoReviewGtag";
 import Link from "next/link";
 import { Search, MapPin, Sparkles, ShieldCheck, Star } from "lucide-react";
 import type { CondoListItem } from "./page";
@@ -46,6 +47,7 @@ export default function ReviewsPageContent({
 
   return (
     <div className="min-h-screen bg-zinc-50 font-sans pb-24">
+      <CondoReviewGtag />
       <Navbar dict={dict} />
 
       <main className="mx-auto max-w-5xl px-4 py-8">
